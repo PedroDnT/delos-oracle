@@ -1,0 +1,606 @@
+# Week 1: Oracle Implementation Guide (Days 1-7)
+
+## Overview
+Build the Brazilian Macro Oracle - the foundational infrastructure for tokenized securities.
+
+**Deliverables**:
+- Smart contract for on-chain data storage
+- Backend service for automated updates
+- REST API for data access
+- Complete test coverage
+- Deployment to testnet
+
+---
+
+## Day 1: Smart Contract Development
+
+### Setup
+
+```bash
+mkdir -p brazilian-oracle-platform/contracts
+cd brazilian-oracle-platform/contracts
+
+npm init -y
+npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
+npm install @openzeppelin/contracts
+
+npx hardhat init
+# Choose: "Create a TypeScript project"
+```
+
+### Oracle Architecture
+
+**Location**: `contracts/contracts/BrazilianMacroOracle.sol`
+
+**Full Implementation**: See CONTRACT-ORACLE.md
+
+**Trust Model**: This is a **first-party oracle** where your backend service acts as the data provider. This means:
+- You control the data updates (via UPDATER_ROLE)
+- Data comes from trusted source (BCB official API)
+- All updates are transparent and auditable on-chain
+- Anyone can read the data (public view functions)
+
+This centralized approach is appropriate for the ANBIMA pilot phase. Future enhancements could include multi-signature schemes or oracle network integration if justified by scale.
+
+**Key Design Decisions**:
+
+1. **Data Structure**:
+```solidity
+struct RateData {
+    uint256 value;       // In basis points (450 = 4.50%)
+    uint256 timestamp;   // Block timestamp
+    uint256 lastUpdated; // Real-world date (YYYYMMDD)
+    string source;       // "BCB-433" for audit
+    address updater;     // Who updated
+}
+```
+
+2. **Storage Pattern**:
+```solidity
+// Current rates (always latest)
+mapping(string => RateData) private currentRates;
+
+// Historical data (capped at 365 entries)
+mapping(string => RateData[]) private rateHistory;
+
+// Metadata
+mapping(string => RateMetadata) public rateMetadata;
+```
+
+3. **Access Control**:
+- `ADMIN_ROLE`: Add rates, pause oracle, manage settings
+- `UPDATER_ROLE`: Update rate values (backend service)
+- Public: Read any rate data (view functions)
+
+4. **Gas Optimization**:
+```solidity
+// Batch update for efficiency
+function updateRates(
+    string[] memory rateTypes,
+    uint256[] memory values,
+    uint256[] memory lastUpdatedDates,
+    string[] memory sources
+) external onlyRole(UPDATER_ROLE)
+```
+
+### Deployment Script
+
+**Location**: `contracts/scripts/deploy.ts`
+
+```typescript
+import { ethers } from "hardhat";
+
+async function main() {
+  console.log("Deploying BrazilianMacroOracle...");
+
+  const BrazilianMacroOracle = await ethers.getContractFactory("BrazilianMacroOracle");
+  const oracle = await BrazilianMacroOracle.deploy();
+  await oracle.waitForDeployment();
+  
+  const address = await oracle.getAddress();
+  console.log(`✅ Oracle deployed to: ${address}`);
+  
+  // Wait for confirmations before verification
+  console.log("Waiting for 5 block confirmations...");
+  await oracle.deploymentTransaction()?.wait(5);
+  
+  console.log("\nNext steps:");
+  console.log(`1. Verify: npx hardhat verify --network mumbai ${address}`);
+  console.log(`2. Update .env: ORACLE_ADDRESS=${address}`);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+```
+
+### Configuration
+
+**Location**: `contracts/hardhat.config.ts`
+
+```typescript
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
+const config: HardhatUserConfig = {
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
+  networks: {
+    mumbai: {
+      url: process.env.MUMBAI_RPC_URL || "https://rpc-mumbai.maticvigil.com",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 80001,
+    },
+    polygon: {
+      url: process.env.POLYGON_RPC_URL || "https://polygon-rpc.com",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 137,
+    },
+  },
+  etherscan: {
+    apiKey: {
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
+      polygon: process.env.POLYGONSCAN_API_KEY || "",
+    },
+  },
+};
+
+export default config;
+```
+
+**Location**: `contracts/.env.example`
+
+```bash
+MUMBAI_RPC_URL=https://rpc-mumbai.maticvigil.com
+POLYGON_RPC_URL=https://polygon-rpc.com
+PRIVATE_KEY=0x...
+POLYGONSCAN_API_KEY=...
+```
+
+---
+
+## Day 2: Testing & Deployment
+
+### Comprehensive Tests
+
+**Location**: `contracts/test/BrazilianMacroOracle.test.ts`
+
+```typescript
+import { expect } from "chai";
+import { ethers } from "hardhat";
+
+describe("BrazilianMacroOracle", function () {
+  let oracle: any;
+  let owner: any;
+  let updater: any;
+  let user: any;
+
+  beforeEach(async function () {
+    [owner, updater, user] = await ethers.getSigners();
+    
+    const Oracle = await ethers.getContractFactory("BrazilianMacroOracle");
+    oracle = await Oracle.deploy();
+    await oracle.waitForDeployment();
+    
+    const UPDATER_ROLE = await oracle.UPDATER_ROLE();
+    await oracle.grantRole(UPDATER_ROLE, updater.address);
+  });
+
+  describe("Initialization", function () {
+    it("Should initialize with core rates", async function () {
+      const rates = await oracle.getSupportedRates();
+      expect(rates).to.include("IPCA");
+      expect(rates).to.include("CDI");
+      expect(rates).to.include("SELIC");
+      expect(rates).to.include("PTAX");
+    });
+  });
+
+  describe("Rate Updates", function () {
+    it("Should allow updater to update rates", async function () {
+      await expect(
+        oracle.connect(updater).updateRate(
+          "IPCA", 450, 20241115, "BCB-433"
+        )
+      ).to.emit(oracle, "RateUpdated");
+
+      const [value, , lastUpdated] = await oracle.getRate("IPCA");
+      expect(value).to.equal(450);
+      expect(lastUpdated).to.equal(20241115);
+    });
+
+    it("Should support batch updates", async function () {
+      await oracle.connect(updater).updateRates(
+        ["IPCA", "CDI"],
+        [450, 1100],
+        [20241115, 20241115],
+        ["BCB-433", "BCB-12"]
+      );
+
+      const [ipca] = await oracle.getRate("IPCA");
+      const [cdi] = await oracle.getRate("CDI");
+      
+      expect(ipca).to.equal(450);
+      expect(cdi).to.equal(1100);
+    });
+  });
+
+  describe("Historical Data", function () {
+    beforeEach(async function () {
+      await oracle.connect(updater).updateRate("IPCA", 400, 20241001, "BCB-433");
+      await oracle.connect(updater).updateRate("IPCA", 420, 20241015, "BCB-433");
+      await oracle.connect(updater).updateRate("IPCA", 450, 20241115, "BCB-433");
+    });
+
+    it("Should store history", async function () {
+      const length = await oracle.getHistoryLength("IPCA");
+      expect(length).to.equal(3);
+    });
+
+    it("Should retrieve recent history", async function () {
+      const recent = await oracle.getRecentHistory("IPCA", 2);
+      expect(recent.length).to.equal(2);
+      expect(recent[1].value).to.equal(450);
+    });
+  });
+});
+```
+
+### Run Tests
+
+```bash
+npx hardhat test
+npx hardhat coverage
+```
+
+### Deploy to Testnet
+
+```bash
+# Set environment variables
+cp .env.example .env
+# Edit .env with your values
+
+# Deploy to arbitrum testnet sepolia
+npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+
+# Verify on ArbitrumScan
+npx hardhat verify --network arbitrumSepolia --contract <CONTRACT_ADDRESS>
+```
+
+---
+
+## Day 3: Backend - BCB Client
+
+### Setup
+
+```bash
+cd ../
+mkdir backend
+cd backend
+
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+pip install fastapi uvicorn web3 python-dotenv requests schedule apscheduler eth-account
+pip freeze > requirements.txt
+```
+
+### BCB API Client
+
+**Location**: `backend/bcb_client.py`
+
+**Full Implementation**: See BACKEND-BCB-CLIENT.md
+
+**Key Features**:
+- Fetches data from official BCB API
+- Handles date format conversion (DD/MM/YYYY → YYYYMMDD)
+- Converts percentages to basis points (4.5% → 450)
+- Validates data ranges
+- Supports batch fetching
+
+**Usage Example**:
+```python
+from bcb_client import BCBClient
+
+client = BCBClient()
+
+# Fetch latest IPCA
+ipca = client.fetch_latest("IPCA")
+print(f"IPCA: {ipca['value_decimal']}% ({ipca['value']} bps)")
+
+# Fetch all rates
+all_rates = client.fetch_all_latest()
+
+# Historical data
+from datetime import datetime, timedelta
+start = datetime.now() - timedelta(days=30)
+historical = client.fetch_historical("CDI", start)
+```
+
+---
+
+## Day 4: Backend - Oracle Updater
+
+### Oracle Updater Service
+
+**Location**: `backend/oracle_updater.py`
+
+**Full Implementation**: See BACKEND-ORACLE-UPDATER.md
+
+**Key Features**:
+- Web3 integration with Polygon
+- Transaction signing and sending
+- Gas price optimization
+- Batch update support
+- Error handling and retries
+
+**Process Flow**:
+```
+1. Initialize Web3 connection
+2. Load contract ABI and address
+3. Setup account from private key
+4. Fetch latest rates from BCB
+5. Validate data
+6. Build transaction
+7. Sign with private key
+8. Send to network
+9. Wait for confirmation
+10. Log result
+```
+
+**Usage Example**:
+```python
+from oracle_updater import OracleUpdater
+
+updater = OracleUpdater(
+    rpc_url="https://rpc-mumbai.maticvigil.com",
+    contract_address="0x...",
+    private_key="0x...",
+    contract_abi=oracle_abi
+)
+
+# Update all rates
+results = updater.sync_all_rates()
+
+# Update single rate
+updater.update_single_rate("IPCA", 450, 20241115, "BCB-433")
+```
+
+### Automated Scheduler
+
+**Location**: `backend/scheduler.py`
+
+**Full Implementation**: See BACKEND-SCHEDULER.md
+
+**Schedule**:
+```python
+# Daily updates (CDI, PTAX)
+schedule.every().day.at("19:00").do(daily_update)
+
+# Monthly updates (IPCA)
+schedule.every().day.at("10:00").do(
+    lambda: monthly_update() if datetime.now().day == 11 else None
+)
+
+# Health checks
+schedule.every(6).hours.do(health_check)
+```
+
+**Run Scheduler**:
+```bash
+python scheduler.py
+```
+
+---
+
+## Day 5: REST API
+
+### FastAPI Implementation
+
+**Location**: `backend/api.py`
+
+**Full Implementation**: See BACKEND-API.md
+
+**Endpoints**:
+```
+GET  /                          # API info
+GET  /health                    # System health
+GET  /rates                     # Supported rates
+GET  /rates/{rate_type}         # Current rate
+GET  /rates/{rate_type}/history # Historical data
+GET  /bcb/{rate_type}           # Direct BCB (bypass cache)
+POST /sync                      # Trigger update
+```
+
+**Run API**:
+```bash
+uvicorn api:app --reload --port 8000
+```
+
+**Test Endpoints**:
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/rates
+curl http://localhost:8000/rates/IPCA
+curl http://localhost:8000/rates/IPCA/history?limit=30
+```
+
+---
+
+## Day 6: Deployment & Configuration
+
+### Railway Deployment
+
+**Location**: `backend/Procfile`
+
+```
+web: uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}
+worker: python scheduler.py
+```
+
+**Railway Setup**:
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Initialize project
+railway init
+
+# Add environment variables via Railway dashboard:
+RPC_URL=https://rpc-mumbai.maticvigil.com
+ORACLE_ADDRESS=0x...
+PRIVATE_KEY=0x...
+
+# Deploy
+railway up
+```
+
+**Environment Variables**:
+```bash
+RPC_URL=https://rpc-mumbai.maticvigil.com
+ORACLE_ADDRESS=0x...  # From Day 2 deployment
+PRIVATE_KEY=0x...     # Backend service key (needs UPDATER_ROLE)
+PORT=8000
+```
+
+### Grant UPDATER_ROLE
+
+```bash
+# Using Hardhat console
+npx hardhat console --network mumbai
+
+const oracle = await ethers.getContractAt(
+  "BrazilianMacroOracle", 
+  "0x..."  // Your oracle address
+);
+
+const UPDATER_ROLE = await oracle.UPDATER_ROLE();
+await oracle.grantRole(UPDATER_ROLE, "0x...");  // Backend address
+
+console.log("✅ UPDATER_ROLE granted");
+```
+
+---
+
+## Day 7: Documentation & Testing
+
+### Create Oracle Documentation
+
+**Location**: `docs/ORACLE_SPEC.md`
+
+Include:
+- Contract address (testnet & mainnet)
+- ABI reference
+- Usage examples
+- Data sources
+- Update frequency
+- Gas costs
+- Security model
+
+### Integration Testing
+
+```bash
+# 1. Check API health
+curl https://your-api.railway.app/health
+
+# 2. Trigger manual sync
+curl -X POST https://your-api.railway.app/sync
+
+# 3. Verify on-chain data
+npx hardhat console --network mumbai
+> const oracle = await ethers.getContractAt("BrazilianMacroOracle", "0x...")
+> await oracle.getRate("IPCA")
+
+# 4. Check PolygonScan
+# View transactions, events, rate updates
+```
+
+### Create Demo Video
+
+Record walkthrough showing:
+1. Live API endpoints
+2. On-chain data verification
+3. Oracle dashboard (if frontend started)
+4. BCB data source
+5. Update process
+
+---
+
+## Week 1 Deliverables Checklist
+
+- [ ] Smart contract deployed to Mumbai testnet
+- [ ] Contract verified on PolygonScan
+- [ ] Backend service running on Railway
+- [ ] Automated scheduler operational
+- [ ] REST API accessible
+- [ ] Initial rates populated (IPCA, CDI, SELIC, PTAX)
+- [ ] Tests passing (>90% coverage)
+- [ ] Documentation complete
+- [ ] Demo video recorded
+
+---
+
+## Common Issues & Solutions
+
+### Issue: Transaction Failing
+
+```bash
+# Check account has MATIC
+# Check UPDATER_ROLE granted
+# Check gas price not too low
+# Check nonce not stuck
+
+# Reset nonce if needed
+npx hardhat console --network mumbai
+> const [signer] = await ethers.getSigners()
+> const nonce = await signer.getNonce()
+> console.log("Current nonce:", nonce)
+```
+
+### Issue: BCB API Rate Limit
+
+```python
+# Add retry with exponential backoff
+import time
+
+def fetch_with_retry(rate_type, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return client.fetch_latest(rate_type)
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 ** attempt)
+```
+
+### Issue: Gas Too High
+
+```python
+# Use batch updates
+updater.update_multiple_rates([
+    {"rate_type": "IPCA", "value": 450, ...},
+    {"rate_type": "CDI", "value": 1100, ...}
+])
+
+# Instead of individual updates
+```
+
+---
+
+**Next**: Proceed to `WEEK2-DEBENTURES.md` for tokenized securities implementation

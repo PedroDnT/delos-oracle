@@ -1,0 +1,737 @@
+# Week 2: Debenture Platform Implementation (Days 8-14)
+
+## Overview
+Build the tokenized debenture platform that uses the Oracle for IPCA+/CDI+ indexation.
+
+**Deliverables**:
+- Debenture smart contracts (ERC-1404 compliant)
+- Factory contract for standardized deployment
+- Frontend application for issuance and management
+- Complete integration testing
+- Deployment and documentation
+
+---
+
+## Day 8: Debenture Smart Contracts
+
+### RestrictedToken (ERC-1404 Base)
+
+**Location**: `contracts/contracts/RestrictedToken.sol`
+
+**Full Implementation**: See CONTRACT-RESTRICTED-TOKEN.md
+
+**Purpose**: Base contract implementing ERC-1404 standard for securities tokens
+
+**Key Features**:
+```solidity
+// Transfer restriction detection
+function detectTransferRestriction(
+    address from,
+    address to,
+    uint256 value
+) public view returns (uint8 code);
+
+// Human-readable restriction messages
+function messageForTransferRestriction(uint8 code) 
+    external pure returns (string memory);
+
+// Whitelist management
+function addToWhitelist(address account) external;
+function batchAddToWhitelist(address[] accounts) external;
+
+// Lock mechanisms
+function lockAddress(address account, uint256 until) external;
+```
+
+**Restriction Codes**:
+```
+0: SUCCESS - Transfer allowed
+1: NOT_WHITELISTED - Recipient not KYC approved
+2: TRANSFER_PAUSED - Global pause active
+3: EXCEEDS_MAX_BALANCE - Regulatory limit
+4: LOCK_PERIOD_ACTIVE - Lock-up period not expired
+```
+
+### BrazilianDebenture Contract
+
+**Location**: `contracts/contracts/BrazilianDebenture.sol`
+
+**Full Implementation**: See CONTRACT-DEBENTURE.md
+
+**Core Structure**:
+```solidity
+contract BrazilianDebenture is RestrictedToken, ReentrancyGuard {
+    // Terms
+    struct DebentureTerms {
+        uint256 faceValue;              // Total emission (BRL)
+        uint256 issueDate;              // Issue timestamp
+        uint256 maturityDate;           // Maturity timestamp
+        RateType rateType;              // PRE, IPCA_PLUS, CDI_PLUS
+        uint256 fixedRate;              // Spread in basis points
+        uint256 couponFrequencyDays;    // 180 = semiannual
+        uint256 amortizationPercent;    // 10000 = 100%
+        address issuer;
+        string isinCode;
+        string series;
+    }
+    
+    // Coupon tracking
+    struct CouponPayment {
+        uint256 amount;
+        uint256 paidAt;
+        uint256 rateUsed;
+        bool isPaid;
+    }
+    
+    enum DebentureStatus { ACTIVE, MATURED, DEFAULTED, REDEEMED }
+}
+```
+
+**Coupon Calculation**:
+```solidity
+function calculateNextCoupon() public view returns (uint256, uint256) {
+    // Get rate from oracle
+    (uint256 oracleRate,,) = IBrazilianOracle(rateOracle).getRate(
+        terms.rateType == RateType.IPCA_PLUS ? "IPCA" : "CDI"
+    );
+    
+    // Total rate = oracle rate + spread
+    uint256 totalRate = oracleRate + terms.fixedRate;
+    
+    // Calculate: principal × rate × (days/252)
+    uint256 daysFactor = (terms.couponFrequencyDays * 10000) / 252;
+    uint256 amount = (outstandingPrincipal * totalRate * daysFactor) 
+                     / (10000 * 10000);
+    
+    return (amount, totalRate);
+}
+```
+
+**Payment Process**:
+```solidity
+// Step 1: Record calculation
+function recordCouponCalculation() external;
+
+// Step 2: Issuer pays
+function payCoupon(uint256 paymentIndex) external onlyIssuer;
+
+// Step 3: Investors claim
+function claimCoupon(uint256 paymentIndex) external;
+```
+
+### DebentureFactory
+
+**Location**: `contracts/contracts/DebentureFactory.sol`
+
+**Full Implementation**: See CONTRACT-FACTORY.md
+
+**Key Functions**:
+```solidity
+// Full flexibility
+function createDebenture(
+    DebentureTerms memory terms,
+    address trustee,
+    string memory name,
+    string memory symbol
+) external payable returns (address);
+
+// Simplified for common case
+function createSimpleIPCADebenture(
+    uint256 faceValue,
+    uint256 maturityYears,
+    uint256 spread,
+    address trustee,
+    string memory name,
+    string memory symbol,
+    string memory isinCode,
+    string memory series
+) external payable returns (address);
+
+// Registry
+function getIssuerDebentures(address issuer) 
+    external view returns (address[]);
+function getAllDebentures() 
+    external view returns (address[]);
+```
+
+---
+
+## Day 9: Testing & Deployment
+
+### Comprehensive Tests
+
+**Location**: `contracts/test/BrazilianDebenture.test.ts`
+
+```typescript
+describe("BrazilianDebenture", function () {
+  let debenture: any;
+  let oracle: any;
+  let paymentToken: any;
+  let issuer: any;
+  let investor: any;
+
+  beforeEach(async function () {
+    // Deploy mock payment token
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    paymentToken = await MockERC20.deploy("Mock BRL", "BRL");
+    
+    // Setup oracle with IPCA rate
+    await oracle.updateRate("IPCA", 450, 20241115, "BCB-433");
+    
+    // Deploy debenture
+    const terms = {
+      faceValue: parseEther("1000000"),
+      issueDate: await time.latest(),
+      maturityDate: (await time.latest()) + ONE_YEAR,
+      rateType: 1, // IPCA_PLUS
+      fixedRate: 500, // 5% spread
+      couponFrequencyDays: 180,
+      amortizationPercent: 10000,
+      issuer: issuer.address,
+      isinCode: "BRTEST123456",
+      series: "1ª Série"
+    };
+    
+    const Debenture = await ethers.getContractFactory("BrazilianDebenture");
+    debenture = await Debenture.deploy(
+      terms, oracle.address, paymentToken.address, 
+      trustee.address, "Test Debenture", "TEST"
+    );
+  });
+
+  describe("Coupon Calculations", function () {
+    it("Should calculate correct coupon amount", async function () {
+      await time.increase(180 * 24 * 60 * 60);
+      
+      const [amount, rate] = await debenture.calculateNextCoupon();
+      
+      // IPCA (4.5%) + Spread (5%) = 9.5%
+      // 1M × 9.5% × (180/252) ≈ 67,857
+      expect(amount).to.be.closeTo(
+        parseEther("67857"), 
+        parseEther("1000")
+      );
+      expect(rate).to.equal(950); // 9.5%
+    });
+  });
+
+  describe("Transfer Restrictions", function () {
+    it("Should block transfer to non-whitelisted", async function () {
+      await expect(
+        debenture.connect(issuer).transfer(
+          investor.address, 
+          parseEther("1000")
+        )
+      ).to.be.revertedWith("Transfer restricted");
+    });
+    
+    it("Should allow transfer after whitelisting", async function () {
+      await debenture.addToWhitelist(investor.address);
+      
+      await debenture.connect(issuer).transfer(
+        investor.address,
+        parseEther("1000")
+      );
+      
+      expect(await debenture.balanceOf(investor.address))
+        .to.equal(parseEther("1000"));
+    });
+  });
+
+  describe("Maturity and Redemption", function () {
+    it("Should allow maturity after maturity date", async function () {
+      await time.increase(ONE_YEAR + 1);
+      await debenture.mature();
+      expect(await debenture.status()).to.equal(1); // MATURED
+    });
+  });
+});
+```
+
+### Deploy Contracts
+
+```bash
+# Deploy Factory (depends on Oracle)
+npx hardhat run scripts/deploy-factory.ts --network mumbai
+
+# Verify
+npx hardhat verify --network mumbai <FACTORY_ADDRESS> \
+  <ORACLE_ADDRESS> <PAYMENT_TOKEN_ADDRESS>
+```
+
+### Create Mock Payment Token
+
+**Location**: `contracts/contracts/mocks/MockERC20.sol`
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract MockERC20 is ERC20 {
+    constructor(string memory name, string memory symbol) 
+        ERC20(name, symbol) {}
+    
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+    
+    function decimals() public pure override returns (uint8) {
+        return 18;
+    }
+}
+```
+
+---
+
+## Day 10: Frontend Setup
+
+### Initialize Next.js Project
+
+```bash
+cd ../
+npx create-next-app@latest frontend --typescript --tailwind --app
+cd frontend
+
+# Install Web3 dependencies
+npm install wagmi viem @rainbow-me/rainbowkit
+npm install @tanstack/react-query
+npm install ethers@6.9.0
+
+# Install UI dependencies
+npm install lucide-react class-variance-authority clsx tailwind-merge
+npm install recharts date-fns
+```
+
+### Project Structure
+
+```
+frontend/
+├── app/
+│   ├── layout.tsx              # Root layout with providers
+│   ├── page.tsx                # Home (Oracle dashboard)
+│   ├── issue/
+│   │   └── page.tsx            # Issue new debenture
+│   ├── debenture/
+│   │   └── [address]/
+│   │       └── page.tsx        # Debenture details
+│   └── portfolio/
+│       └── page.tsx            # User portfolio
+├── components/
+│   ├── ui/                     # Base components
+│   ├── providers/              # Web3 providers
+│   ├── OracleDashboard.tsx
+│   ├── IssueDebentureForm.tsx
+│   ├── DebentureList.tsx
+│   └── DebentureCard.tsx
+├── lib/
+│   ├── contracts.ts            # Contract addresses & ABIs
+│   ├── utils.ts                # Helper functions
+│   └── wagmi.ts                # Wagmi configuration
+└── types/
+    └── index.ts                # TypeScript types
+```
+
+### Core Configuration
+
+**Location**: `frontend/lib/contracts.ts`
+
+```typescript
+export const CONTRACTS = {
+  ORACLE: {
+    address: process.env.NEXT_PUBLIC_ORACLE_ADDRESS as `0x${string}`,
+    abi: [ /* Oracle ABI */ ]
+  },
+  FACTORY: {
+    address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
+    abi: [ /* Factory ABI */ ]
+  },
+  DEBENTURE: {
+    abi: [ /* Debenture ABI */ ]
+  }
+};
+```
+
+**Location**: `frontend/lib/wagmi.ts`
+
+```typescript
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { polygonMumbai, polygon } from 'wagmi/chains';
+
+export const config = getDefaultConfig({
+  appName: 'Brazilian Debentures',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_ID!,
+  chains: [polygonMumbai, polygon],
+  ssr: true,
+});
+```
+
+**Location**: `frontend/.env.local`
+
+```bash
+NEXT_PUBLIC_ORACLE_ADDRESS=0x...
+NEXT_PUBLIC_FACTORY_ADDRESS=0x...
+NEXT_PUBLIC_WALLETCONNECT_ID=...
+```
+
+---
+
+## Day 11: Core Components
+
+### Oracle Dashboard
+
+**Location**: `frontend/components/OracleDashboard.tsx`
+
+**Full Implementation**: See FRONTEND-ORACLE-DASHBOARD.md
+
+**Features**:
+- Display all supported rates
+- Real-time updates (wagmi watch)
+- Beautiful card-based UI
+- Links to contract explorer
+
+### Oracle Rate Card
+
+**Location**: `frontend/components/OracleRateCard.tsx`
+
+```typescript
+export function OracleRateCard({ rateType, name, description }) {
+  const { data, isLoading } = useContractRead({
+    address: CONTRACTS.ORACLE.address,
+    abi: CONTRACTS.ORACLE.abi,
+    functionName: 'getRate',
+    args: [rateType],
+    watch: true,
+  });
+
+  const [value, timestamp, lastUpdated] = data || [];
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{name}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold text-green-600">
+          {(Number(value) / 100).toFixed(2)}%
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Updated: {formatDate(lastUpdated)}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+---
+
+## Day 12: Issuance Interface
+
+### Issue Debenture Form
+
+**Location**: `frontend/components/IssueDebentureForm.tsx`
+
+**Full Implementation**: See FRONTEND-ISSUE-FORM.md
+
+**Features**:
+- Wizard-style form (Basic Info → Terms → Review)
+- Real-time validation
+- Preview of expected coupons
+- Transaction confirmation UI
+
+**Form Fields**:
+```typescript
+interface FormData {
+  // Basic Info
+  name: string;           // "Empresa XYZ IPCA+ 2027"
+  symbol: string;         // "XYZ27"
+  isinCode: string;       // "BRXYZWABC123"
+  series: string;         // "1ª Série"
+  
+  // Terms
+  faceValue: string;      // "1000000" (BRL)
+  maturityYears: string;  // "2"
+  spread: string;         // "500" (5% in bps)
+}
+```
+
+**Usage**:
+```typescript
+const { write } = useContractWrite({
+  address: CONTRACTS.FACTORY.address,
+  abi: CONTRACTS.FACTORY.abi,
+  functionName: 'createSimpleIPCADebenture',
+});
+
+const handleSubmit = () => {
+  write({
+    args: [
+      parseEther(formData.faceValue),
+      BigInt(formData.maturityYears),
+      BigInt(formData.spread),
+      address, // trustee
+      formData.name,
+      formData.symbol,
+      formData.isinCode,
+      formData.series,
+    ],
+  });
+};
+```
+
+---
+
+## Day 13: Debenture Management
+
+### Debenture List
+
+**Location**: `frontend/components/DebentureList.tsx`
+
+**Full Implementation**: See FRONTEND-DEBENTURE-LIST.md
+
+**Features**:
+- View all debentures or user's only
+- Filter by status (Active, Matured, etc.)
+- Search by name/symbol
+- Pagination
+
+### Debenture Card
+
+**Location**: `frontend/components/DebentureCard.tsx`
+
+```typescript
+export function DebentureCard({ address }) {
+  const { data } = useContractReads({
+    contracts: [
+      {
+        address,
+        abi: CONTRACTS.DEBENTURE.abi,
+        functionName: 'name',
+      },
+      {
+        address,
+        abi: CONTRACTS.DEBENTURE.abi,
+        functionName: 'getDebentureInfo',
+      },
+    ],
+  });
+
+  const [nameResult, infoResult] = data || [];
+  const name = nameResult?.result;
+  const info = infoResult?.result;
+
+  return (
+    <Link href={`/debenture/${address}`}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{name}</CardTitle>
+          <Badge>{getStatusLabel(info.debStatus)}</Badge>
+        </CardHeader>
+        <CardContent>
+          <div>Value: {formatBRL(info.debTerms.faceValue)}</div>
+          <div>Rate: {getRateTypeLabel(info.debTerms.rateType)}</div>
+          <div>Maturity: {formatDate(info.debTerms.maturityDate)}</div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+```
+
+### Debenture Detail Page
+
+**Location**: `frontend/app/debenture/[address]/page.tsx`
+
+**Full Implementation**: See FRONTEND-DEBENTURE-DETAIL.md
+
+**Sections**:
+1. **Overview**: Terms, status, issuer info
+2. **Coupon Schedule**: Past and future payments
+3. **Your Holdings**: Balance, expected yield
+4. **Actions**: 
+   - Issuer: Record coupon, pay coupon
+   - Investor: Claim coupon, transfer
+   - Anyone: Mature (if past maturity date)
+
+---
+
+## Day 14: Final Polish & Deployment
+
+### Navigation & Layout
+
+**Location**: `frontend/app/layout.tsx`
+
+```typescript
+import { WagmiConfig } from 'wagmi';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { config } from '@/lib/wagmi';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="pt-BR">
+      <body>
+        <WagmiConfig config={config}>
+          <RainbowKitProvider>
+            <div className="min-h-screen bg-background">
+              <Header />
+              <main className="container mx-auto py-6">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </body>
+    </html>
+  );
+}
+```
+
+### Header Component
+
+```typescript
+export function Header() {
+  return (
+    <header className="border-b">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-8">
+            <Link href="/" className="text-xl font-bold">
+              Brazilian Debentures
+            </Link>
+            <nav className="hidden md:flex space-x-4">
+              <Link href="/">Oracle</Link>
+              <Link href="/issue">Issue</Link>
+              <Link href="/portfolio">Portfolio</Link>
+            </nav>
+          </div>
+          <ConnectButton />
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+### Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel
+
+# Set environment variables in Vercel dashboard:
+# NEXT_PUBLIC_ORACLE_ADDRESS
+# NEXT_PUBLIC_FACTORY_ADDRESS
+# NEXT_PUBLIC_WALLETCONNECT_ID
+
+# Deploy to production
+vercel --prod
+```
+
+---
+
+## Week 2 Deliverables Checklist
+
+- [ ] Debenture contracts deployed to Mumbai
+- [ ] Factory contract deployed to Mumbai
+- [ ] Contracts verified on PolygonScan
+- [ ] Frontend deployed to Vercel
+- [ ] Can issue IPCA+ debenture through UI
+- [ ] Can view debenture details
+- [ ] Can calculate and pay coupons
+- [ ] Transfer restrictions working
+- [ ] Tests passing (>90% coverage)
+- [ ] Documentation complete
+
+---
+
+## Integration Testing Scenarios
+
+### Scenario 1: Full Issuance Flow
+
+```
+1. Connect wallet to frontend
+2. Navigate to /issue
+3. Fill form:
+   - Name: "Test Corp IPCA+ 2026"
+   - Symbol: "TEST26"
+   - Face Value: 1,000,000 BRL
+   - Maturity: 2 years
+   - Spread: 5%
+4. Submit transaction
+5. Wait for confirmation
+6. Verify on PolygonScan
+7. Navigate to debenture detail page
+8. Confirm all data correct
+```
+
+### Scenario 2: Coupon Payment Flow
+
+```
+1. Time travel to first coupon date (180 days)
+2. Call recordCouponCalculation()
+3. Verify coupon amount calculated correctly
+4. Mint payment tokens to issuer
+5. Approve payment token to debenture
+6. Call payCoupon(0)
+7. Verify coupon marked as paid
+8. Investor calls claimCoupon(0)
+9. Verify payment received
+```
+
+### Scenario 3: Transfer Restriction
+
+```
+1. Issuer tries to transfer to non-whitelisted address
+2. Transaction reverts with "Transfer restricted"
+3. Call addToWhitelist(recipient)
+4. Retry transfer
+5. Transfer succeeds
+6. Verify balance updated
+```
+
+---
+
+## Common Issues & Solutions
+
+### Issue: Wallet Not Connecting
+
+```typescript
+// Check RainbowKit configuration
+// Ensure WalletConnect project ID is set
+// Try clearing browser cache
+// Check network is supported (Mumbai/Polygon)
+```
+
+### Issue: Transaction Failing on Debenture Creation
+
+```
+1. Check payment token approved
+2. Verify factory has correct oracle address
+3. Ensure sufficient MATIC for gas
+4. Check form data validation
+5. Review contract events for revert reason
+```
+
+### Issue: Oracle Rate Not Updating in UI
+
+```typescript
+// Ensure watch: true in useContractRead
+const { data } = useContractRead({
+  address: CONTRACTS.ORACLE.address,
+  abi: CONTRACTS.ORACLE.abi,
+  functionName: 'getRate',
+  args: [rateType],
+  watch: true,  // This enables polling
+});
+```
+
+---
+
+**Next**: See `DEPLOYMENT.md` for production deployment guide

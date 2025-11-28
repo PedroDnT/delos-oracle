@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(cat:*)",
+      "Bash(npx hardhat test:*)",
+      "Bash(npx hardhat compile:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
