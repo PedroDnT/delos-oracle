@@ -29,7 +29,7 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 |-----------|--------|----------|-------|
 | BrazilianDebenture.sol | ✅ Done | HIGH | 900+ lines, ANBIMA-compliant |
 | RestrictedToken.sol | ⚠️ Integrated | HIGH | ERC-1404 in BrazilianDebenture |
-| DebentureFactory.sol | ❌ Empty | MEDIUM | Deployment templates |
+| DebentureFactory.sol | ⚠️ Not Deployed | MEDIUM | Contract exists, deployment script missing, not deployed to Arbitrum Sepolia |
 | Debenture Tests | ✅ Done | HIGH | 61/61 tests passing |
 | MockERC20.sol | ✅ Done | - | Test helper for payment token |
 
@@ -246,6 +246,17 @@ python oracle_updater.py sync-all # Update all rates
   - DI-Indexed Debentures (2 tests)
 - Created `MockERC20.sol` for payment token testing
 - **Total tests**: 94 passing (33 oracle + 61 debenture)
+
+### 2024-12-08 - Factory Deployment Status
+- **Fixed**: `NEXT_PUBLIC_FACTORY_ADDRESS` empty string bug in `frontend/.env.local`
+  - Empty string would cast to invalid `0x` address causing runtime failures
+  - Set to zero address placeholder with TODO comment
+- **Verified**: DebentureFactory contract exists but has NOT been deployed
+  - Contract code exists: `contracts/contracts/DebentureFactory.sol`
+  - Deployment script missing: `scripts/deploy-factory.ts` does not exist
+  - Environment variable set to placeholder: `0x0000000000000000000000000000000000000000`
+  - Oracle deployed: `0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe` on Arbitrum Sepolia
+  - Factory needs deployment script and deployment to Arbitrum Sepolia before use
 
 ---
 
