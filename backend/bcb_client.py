@@ -29,14 +29,14 @@ Value Encoding:
 API Documentation: https://dadosabertos.bcb.gov.br/
 """
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import httpx
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -489,31 +489,39 @@ class BCBClient:
     async def _request(self, url: str) -> List[Dict]:
         """
         Make HTTP request to BCB API.
-        
+
         Args:
             url: Full API URL
-            
+
         Returns:
             Parsed JSON response
-            
+
         Raises:
             BCBAPIError: Request failed
             BCBNoDataError: Empty response
+            BCBParseError: Invalid response structure
         """
         client = self._get_client()
-        
+
         try:
             logger.debug(f"BCB API Request: {url}")
             response = await client.get(url)
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             if not data:
                 raise BCBNoDataError(f"Empty response from BCB API: {url}")
-            
+
+            # Validate response structure
+            if not self.validate_response_structure(data):
+                raise BCBParseError(
+                    f"Invalid response structure from BCB API. "
+                    f"Expected list of {{data, valor}}, got: {type(data).__name__}"
+                )
+
             return data
-            
+
         except httpx.HTTPStatusError as e:
             raise BCBAPIError(
                 f"BCB API HTTP {e.response.status_code}: {e.response.text}"
@@ -609,21 +617,133 @@ class BCBClient:
     
     async def fetch_all_latest(self) -> Dict[RateType, RateData]:
         """
-        Fetch latest values for all supported rates.
-        
+        Fetch latest values for all supported rates (sequential, for backward compat).
+
         Returns:
             Dictionary mapping rate types to their latest values
         """
         results = {}
-        
+
         for rate_type in RateType:
             try:
                 results[rate_type] = await self.fetch_latest(rate_type)
             except BCBClientError as e:
                 logger.error(f"Failed to fetch {rate_type.value}: {e}")
                 continue
-        
+
         return results
+
+    async def fetch_all_latest_parallel(
+        self,
+        rate_types: Optional[List[RateType]] = None
+    ) -> Dict[RateType, RateData]:
+        """
+        Fetch latest values for multiple rates in parallel.
+
+        Uses asyncio.gather with return_exceptions=False and internal
+        error handling for graceful partial failure.
+
+        Args:
+            rate_types: List of rates to fetch (default: all)
+
+        Returns:
+            Dictionary of successfully fetched rates
+        """
+        if rate_types is None:
+            rate_types = list(RateType)
+
+        async def fetch_with_error_handling(rate_type: RateType) -> Tuple[RateType, Optional[RateData]]:
+            """Wrapper to handle individual fetch errors."""
+            try:
+                data = await self.fetch_latest(rate_type)
+                return (rate_type, data)
+            except BCBClientError as e:
+                logger.error(f"Failed to fetch {rate_type.value}: {e}")
+                return (rate_type, None)
+
+        # Fetch all rates concurrently
+        results = await asyncio.gather(
+            *[fetch_with_error_handling(rt) for rt in rate_types],
+            return_exceptions=False  # Exceptions handled in wrapper
+        )
+
+        # Filter out failed fetches
+        return {
+            rate_type: data
+            for rate_type, data in results
+            if data is not None
+        }
+
+    async def fetch_with_retry(
+        self,
+        rate_type: RateType,
+        max_retries: int = 3,
+        base_delay: float = 1.0,
+        max_delay: float = 60.0
+    ) -> RateData:
+        """
+        Fetch with exponential backoff retry.
+
+        Retries on transient errors (network, HTTP 5xx) with
+        exponential backoff: base_delay * 2^attempt.
+
+        Args:
+            rate_type: Rate to fetch
+            max_retries: Maximum retry attempts
+            base_delay: Initial delay in seconds
+            max_delay: Maximum delay between retries
+
+        Returns:
+            RateData on success
+
+        Raises:
+            BCBClientError: After all retries exhausted
+        """
+        last_error = None
+
+        for attempt in range(max_retries + 1):
+            try:
+                return await self.fetch_latest(rate_type)
+            except BCBClientError as e:
+                last_error = e
+                if attempt < max_retries:
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    logger.warning(
+                        f"Retry {attempt + 1}/{max_retries} for {rate_type.value} "
+                        f"after {delay:.1f}s: {e}"
+                    )
+                    await asyncio.sleep(delay)
+
+        # All retries exhausted
+        raise last_error
+
+    def validate_response_structure(self, data: Any) -> bool:
+        """
+        Validate BCB API response structure.
+
+        Expected format: [{"data": "DD/MM/YYYY", "valor": "X.XX"}, ...]
+
+        Args:
+            data: Raw response from BCB API
+
+        Returns:
+            True if structure is valid
+        """
+        if not isinstance(data, list):
+            return False
+
+        for item in data:
+            if not isinstance(item, dict):
+                return False
+            if "data" not in item or "valor" not in item:
+                return False
+            if not isinstance(item["data"], str):
+                return False
+            # valor can be string or number
+            if not isinstance(item["valor"], (str, int, float)):
+                return False
+
+        return True
     
     async def health_check(self) -> bool:
         """

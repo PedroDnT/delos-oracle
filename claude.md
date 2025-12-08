@@ -10,14 +10,14 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 
 ---
 
-## Current Status: ~65% Complete
+## Current Status: ~80% Complete
 
 ### Phase 1: Oracle Infrastructure (COMPLETE)
 
 | Component | Status | Location | Notes |
 |-----------|--------|----------|-------|
 | BrazilianMacroOracle.sol | ✅ Done | `contracts/contracts/` | 577 lines, 33/33 tests passing |
-| BCB Client | ✅ Done | `backend/bcb_client.py` | 784 lines, async/sync support |
+| BCB Client | ✅ Enhanced | `backend/bcb_client.py` | 850+ lines, parallel fetch, retry, validation |
 | Oracle Updater | ✅ Done | `backend/oracle_updater.py` | 431 lines, Web3 integration |
 | Oracle Tests | ✅ Done | `contracts/test/` | Full coverage |
 
@@ -29,17 +29,20 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 |-----------|--------|----------|-------|
 | BrazilianDebenture.sol | ✅ Done | HIGH | 900+ lines, ANBIMA-compliant |
 | RestrictedToken.sol | ⚠️ Integrated | HIGH | ERC-1404 in BrazilianDebenture |
-| DebentureFactory.sol | ⚠️ Not Deployed | MEDIUM | Contract exists, deployment script missing, not deployed to Arbitrum Sepolia |
+| DebentureFactory.sol | ⚠️ Not Deployed | MEDIUM | Contract exists, deployment script missing |
 | Debenture Tests | ✅ Done | HIGH | 61/61 tests passing |
 | MockERC20.sol | ✅ Done | - | Test helper for payment token |
 
-### Phase 3: Backend Services (PARTIAL)
+### Phase 3: Backend Services (COMPLETE)
 
-| Component | Status | Priority | Effort |
-|-----------|--------|----------|--------|
-| scheduler.py | ❌ Empty | MEDIUM | 1 day |
-| api.py | ❌ Empty | MEDIUM | 1.5 days |
-| Health monitoring | ❌ Planned | LOW | 0.5 days |
+| Component | Status | Location | Notes |
+|-----------|--------|----------|-------|
+| config.py | ✅ Done | `backend/` | Pydantic settings management |
+| logging_config.py | ✅ Done | `backend/` | Structured JSON logging |
+| scheduler.py | ✅ Done | `backend/` | APScheduler, daily/monthly jobs |
+| api.py | ✅ Done | `backend/` | FastAPI, 10 REST endpoints |
+| services/data_store.py | ✅ Done | `backend/services/` | SQLite data versioning |
+| services/anomaly_detector.py | ✅ Done | `backend/services/` | Statistical anomaly detection |
 
 ### Phase 4: Frontend (NOT STARTED)
 
@@ -199,9 +202,45 @@ npx hardhat run scripts/deploy.ts --network arbitrumSepolia
 ### Backend
 ```bash
 cd backend
+
+# Setup virtual environment (first time)
+python -m venv venv
+source venv/bin/activate          # On macOS/Linux
+# venv\Scripts\activate           # On Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# BCB Client
 python bcb_client.py              # Test BCB API
+
+# Oracle Updater
 python oracle_updater.py status   # Check on-chain state
 python oracle_updater.py sync-all # Update all rates
+
+# Scheduler
+python scheduler.py start         # Run scheduler daemon
+python scheduler.py run-once      # Manual update (all rates)
+python scheduler.py run-once --rates CDI,SELIC  # Specific rates
+python scheduler.py status        # Show job schedule
+
+# REST API
+python api.py                     # Run API server (port 8000)
+uvicorn api:app --reload          # Development mode
+```
+
+### API Endpoints
+```
+GET  /health              - Health check
+GET  /rates               - All current rates from oracle
+GET  /rates/{type}        - Specific rate
+GET  /rates/{type}/history - Historical rates from SQLite
+POST /sync                - Manual sync trigger
+GET  /scheduler/jobs      - View scheduled jobs
+GET  /scheduler/runs      - View recent job runs
+GET  /bcb/latest/{type}   - Direct BCB fetch (bypass oracle)
+GET  /anomalies           - View detected anomalies
+GET  /stats               - Database statistics
 ```
 
 ---
@@ -258,6 +297,33 @@ python oracle_updater.py sync-all # Update all rates
   - Oracle deployed: `0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe` on Arbitrum Sepolia
   - Factory needs deployment script and deployment to Arbitrum Sepolia before use
 
+### 2024-12-08 - Backend Services Implementation
+- **Implemented full backend service layer** based on AI/ML code review findings:
+  - `config.py` - Pydantic settings management with environment variable support
+  - `logging_config.py` - Structured JSON logging for production observability
+  - `scheduler.py` - APScheduler-based automation with:
+    - Daily updates at 19:00 BRT (CDI, SELIC, PTAX, TR)
+    - Monthly updates on 10th at 10:00 BRT (IPCA, IGPM)
+    - Stale data checks every 4 hours
+    - Retry logic with exponential backoff
+  - `api.py` - FastAPI REST API with 10 endpoints for rate queries
+  - `services/data_store.py` - SQLite data versioning with 4 tables:
+    - rates (historical BCB data)
+    - oracle_updates (blockchain tx logs)
+    - anomalies (detected anomalies)
+    - scheduler_runs (job execution history)
+  - `services/anomaly_detector.py` - Statistical anomaly detection:
+    - Value spikes (>3 std devs from mean)
+    - Stale data (exceeds heartbeat)
+    - Velocity anomalies (>50% daily change)
+- **Enhanced bcb_client.py**:
+  - Added `fetch_all_latest_parallel()` for concurrent fetching
+  - Added `fetch_with_retry()` with exponential backoff
+  - Added `validate_response_structure()` for input validation
+- **Updated requirements.txt** with new dependencies:
+  - aiosqlite for async SQLite
+  - pydantic-settings for configuration
+
 ---
 
 ## Open Questions (Resolved)
@@ -277,22 +343,67 @@ python oracle_updater.py sync-all # Update all rates
 
 ---
 
-## Files Modified This Session
+## Files Modified This Session (2024-12-08)
 
 | File | Action | Description |
 |------|--------|-------------|
-| `claude.md` | Created/Updated | This tracking document |
-| `BrazilianDebenture.sol` | Improved | Oracle interface, batch claims, ERC-165 |
-| `hardhat.config.ts` | Updated | Added viaIR for compilation |
-| `BrazilianDebenture.test.ts` | Created | 61 comprehensive tests |
-| `mocks/MockERC20.sol` | Created | Test helper for payment token |
+| `backend/config.py` | Created | Pydantic settings management |
+| `backend/logging_config.py` | Created | Structured JSON logging |
+| `backend/scheduler.py` | Created | APScheduler automation |
+| `backend/api.py` | Created | FastAPI REST API (10 endpoints) |
+| `backend/services/__init__.py` | Created | Services package init |
+| `backend/services/data_store.py` | Created | SQLite data versioning |
+| `backend/services/anomaly_detector.py` | Created | Statistical anomaly detection |
+| `backend/bcb_client.py` | Enhanced | Parallel fetch, retry, validation |
+| `backend/requirements.txt` | Updated | Added aiosqlite, pydantic-settings |
+| `CLAUDE.md` | Updated | Progress documentation |
 
 ---
 
-## Next Session Recommendations
+## Next Steps
 
-1. **Implement DebentureFactory.sol** - Standardized deployment templates
-2. **Backend scheduler.py** - Automated oracle updates
-3. **Backend api.py** - REST endpoints for rate queries
-4. **Integration tests** - End-to-end oracle → debenture flow
-5. **Deploy BrazilianDebenture to testnet** - With mock payment token
+### Immediate (High Priority)
+1. **Setup backend venv** - Create and activate virtual environment, install dependencies
+2. **Test backend services** - Verify scheduler, API, and data store work correctly
+3. **Deploy DebentureFactory** - Create deployment script and deploy to Arbitrum Sepolia
+
+### Short Term (Medium Priority)
+4. **Backend unit tests** - Add pytest tests for scheduler, API, data_store, anomaly_detector
+5. **Integration tests** - End-to-end oracle → debenture flow
+6. **Deploy BrazilianDebenture to testnet** - With mock payment token
+
+### Later (Lower Priority)
+7. **Frontend implementation** - Oracle dashboard and debenture issuance UI
+8. **Production deployment** - Docker containerization, CI/CD pipeline
+9. **Monitoring & Alerting** - Slack/email notifications for anomalies and failures
+
+---
+
+## Quick Start (Backend)
+
+```bash
+# 1. Navigate to backend
+cd backend
+
+# 2. Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Set environment variables (copy from contracts/.env or create new)
+export ORACLE_ADDRESS="0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe"
+export PRIVATE_KEY="your_private_key"
+export ARBITRUM_SEPOLIA_RPC="https://sepolia-rollup.arbitrum.io/rpc"
+
+# 5. Test BCB client
+python bcb_client.py
+
+# 6. Run API server
+python api.py
+# Visit http://localhost:8000/docs for Swagger UI
+
+# 7. Run scheduler (in separate terminal)
+python scheduler.py start
+```
