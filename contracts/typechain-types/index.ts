@@ -46,3 +46,5 @@ export type { DebentureFactory } from "./contracts/DebentureFactory";
 export { DebentureFactory__factory } from "./factories/contracts/DebentureFactory__factory";
 export type { MockERC20 } from "./contracts/mocks/MockERC20";
 export { MockERC20__factory } from "./factories/contracts/mocks/MockERC20__factory";
+export type { SimpleDebentureRegistry } from "./contracts/SimpleDebentureRegistry";
+export { SimpleDebentureRegistry__factory } from "./factories/contracts/SimpleDebentureRegistry__factory";

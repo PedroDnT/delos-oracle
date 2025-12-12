@@ -56,6 +56,7 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         # Also check parent contracts directory for shared .env
         env_file = [".env", "../contracts/.env"]
+        extra = "ignore"  # Ignore extra fields from contracts/.env
 
 
 # Global settings instance

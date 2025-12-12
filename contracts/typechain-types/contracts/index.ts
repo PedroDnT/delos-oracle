@@ -7,3 +7,4 @@ import type * as mocks from "./mocks";
 export type { mocks };
 export type { BrazilianMacroOracle } from "./BrazilianMacroOracle";
 export type { DebentureFactory } from "./DebentureFactory";
+export type { SimpleDebentureRegistry } from "./SimpleDebentureRegistry";
