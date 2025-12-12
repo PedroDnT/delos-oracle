@@ -2,5 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as introspection from "./introspection";
+export { Create2__factory } from "./Create2__factory";
+export { Errors__factory } from "./Errors__factory";
 export { Pausable__factory } from "./Pausable__factory";
 export { ReentrancyGuard__factory } from "./ReentrancyGuard__factory";

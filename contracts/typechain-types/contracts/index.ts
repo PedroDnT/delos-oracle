@@ -3,8 +3,11 @@
 /* eslint-disable */
 import type * as brazilianDebentureSol from "./BrazilianDebenture.sol";
 export type { brazilianDebentureSol };
+import type * as brazilianDebentureCloneableSol from "./BrazilianDebentureCloneable.sol";
+export type { brazilianDebentureCloneableSol };
 import type * as mocks from "./mocks";
 export type { mocks };
 export type { BrazilianMacroOracle } from "./BrazilianMacroOracle";
+export type { DebentureCloneFactory } from "./DebentureCloneFactory";
 export type { DebentureFactory } from "./DebentureFactory";
 export type { SimpleDebentureRegistry } from "./SimpleDebentureRegistry";

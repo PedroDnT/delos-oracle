@@ -2,7 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as brazilianDebentureSol from "./BrazilianDebenture.sol";
+export * as brazilianDebentureCloneableSol from "./BrazilianDebentureCloneable.sol";
 export * as mocks from "./mocks";
 export { BrazilianMacroOracle__factory } from "./BrazilianMacroOracle__factory";
+export { DebentureCloneFactory__factory } from "./DebentureCloneFactory__factory";
 export { DebentureFactory__factory } from "./DebentureFactory__factory";
 export { SimpleDebentureRegistry__factory } from "./SimpleDebentureRegistry__factory";

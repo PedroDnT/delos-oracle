@@ -42,6 +42,14 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC1363__factory>;
     getContractFactory(
+      name: "Clones",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Clones__factory>;
+    getContractFactory(
+      name: "Initializable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Initializable__factory>;
+    getContractFactory(
       name: "ERC20",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC20__factory>;
@@ -57,6 +65,14 @@ declare module "hardhat/types/runtime" {
       name: "SafeERC20",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.SafeERC20__factory>;
+    getContractFactory(
+      name: "Create2",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Create2__factory>;
+    getContractFactory(
+      name: "Errors",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Errors__factory>;
     getContractFactory(
       name: "ERC165",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -82,9 +98,21 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBrazilianMacroOracle__factory>;
     getContractFactory(
+      name: "BrazilianDebentureCloneable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.BrazilianDebentureCloneable__factory>;
+    getContractFactory(
+      name: "IBrazilianMacroOracleClone",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IBrazilianMacroOracleClone__factory>;
+    getContractFactory(
       name: "BrazilianMacroOracle",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BrazilianMacroOracle__factory>;
+    getContractFactory(
+      name: "DebentureCloneFactory",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.DebentureCloneFactory__factory>;
     getContractFactory(
       name: "DebentureFactory",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -134,6 +162,16 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC1363>;
     getContractAt(
+      name: "Clones",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Clones>;
+    getContractAt(
+      name: "Initializable",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Initializable>;
+    getContractAt(
       name: "ERC20",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -153,6 +191,16 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.SafeERC20>;
+    getContractAt(
+      name: "Create2",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Create2>;
+    getContractAt(
+      name: "Errors",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Errors>;
     getContractAt(
       name: "ERC165",
       address: string | ethers.Addressable,
@@ -184,10 +232,25 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IBrazilianMacroOracle>;
     getContractAt(
+      name: "BrazilianDebentureCloneable",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.BrazilianDebentureCloneable>;
+    getContractAt(
+      name: "IBrazilianMacroOracleClone",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IBrazilianMacroOracleClone>;
+    getContractAt(
       name: "BrazilianMacroOracle",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.BrazilianMacroOracle>;
+    getContractAt(
+      name: "DebentureCloneFactory",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.DebentureCloneFactory>;
     getContractAt(
       name: "DebentureFactory",
       address: string | ethers.Addressable,
@@ -233,6 +296,14 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC1363>;
     deployContract(
+      name: "Clones",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Clones>;
+    deployContract(
+      name: "Initializable",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Initializable>;
+    deployContract(
       name: "ERC20",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ERC20>;
@@ -248,6 +319,14 @@ declare module "hardhat/types/runtime" {
       name: "SafeERC20",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.SafeERC20>;
+    deployContract(
+      name: "Create2",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Create2>;
+    deployContract(
+      name: "Errors",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Errors>;
     deployContract(
       name: "ERC165",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -273,9 +352,21 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IBrazilianMacroOracle>;
     deployContract(
+      name: "BrazilianDebentureCloneable",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.BrazilianDebentureCloneable>;
+    deployContract(
+      name: "IBrazilianMacroOracleClone",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IBrazilianMacroOracleClone>;
+    deployContract(
       name: "BrazilianMacroOracle",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.BrazilianMacroOracle>;
+    deployContract(
+      name: "DebentureCloneFactory",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DebentureCloneFactory>;
     deployContract(
       name: "DebentureFactory",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -325,6 +416,16 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC1363>;
     deployContract(
+      name: "Clones",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Clones>;
+    deployContract(
+      name: "Initializable",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Initializable>;
+    deployContract(
       name: "ERC20",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -344,6 +445,16 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.SafeERC20>;
+    deployContract(
+      name: "Create2",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Create2>;
+    deployContract(
+      name: "Errors",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Errors>;
     deployContract(
       name: "ERC165",
       args: any[],
@@ -375,10 +486,25 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IBrazilianMacroOracle>;
     deployContract(
+      name: "BrazilianDebentureCloneable",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.BrazilianDebentureCloneable>;
+    deployContract(
+      name: "IBrazilianMacroOracleClone",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IBrazilianMacroOracleClone>;
+    deployContract(
       name: "BrazilianMacroOracle",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.BrazilianMacroOracle>;
+    deployContract(
+      name: "DebentureCloneFactory",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DebentureCloneFactory>;
     deployContract(
       name: "DebentureFactory",
       args: any[],

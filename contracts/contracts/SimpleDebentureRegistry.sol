@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "./BrazilianDebenture.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title SimpleDebentureRegistry
- * @notice Lightweight registry for tracking manually deployed debentures
- * @dev This is a workaround for the DebentureFactory size issue
+ * @notice Registry that can deploy AND track debentures
+ * @dev Simplified version of DebentureFactory with only essential features
  */
 contract SimpleDebentureRegistry is Ownable {
 
     // Oracle address
     address public oracle;
+
+    // Default payment token (can be address(0))
+    address public defaultPaymentToken;
 
     // Array of all registered debenture addresses
     address[] public allDebentures;
@@ -22,15 +26,79 @@ contract SimpleDebentureRegistry is Ownable {
     // Mapping from issuer to their debentures
     mapping(address => address[]) public issuerDebentures;
 
+    event DebentureCreated(
+        address indexed debentureAddress,
+        string indexed isinCode,
+        string name,
+        string symbol,
+        address indexed issuer,
+        uint256 vne,
+        uint256 totalSupply
+    );
+
     event DebentureRegistered(
         address indexed debentureAddress,
         string indexed isinCode,
         address indexed issuer
     );
 
-    constructor(address _oracle) Ownable(msg.sender) {
+    constructor(address _oracle, address _defaultPaymentToken) Ownable(msg.sender) {
         require(_oracle != address(0), "Invalid oracle address");
         oracle = _oracle;
+        defaultPaymentToken = _defaultPaymentToken;
+    }
+
+    /**
+     * @notice Create and deploy a new BrazilianDebenture
+     * @param name Debenture name
+     * @param symbol Debenture symbol
+     * @param terms Debenture terms struct
+     * @param paymentToken Payment token address (or address(0) for default)
+     * @param trustee Trustee address
+     */
+    function createDebenture(
+        string calldata name,
+        string calldata symbol,
+        BrazilianDebenture.DebentureTerms calldata terms,
+        address paymentToken,
+        address trustee
+    ) external returns (address) {
+        require(bytes(terms.isinCode).length == 12, "Invalid ISIN code");
+        require(debenturesByISIN[terms.isinCode] == address(0), "ISIN already exists");
+
+        // Use default payment token if none specified
+        address token = paymentToken == address(0) ? defaultPaymentToken : paymentToken;
+
+        // Deploy new debenture
+        // Constructor order: name, symbol, terms, oracle, paymentToken, issuer, trustee
+        BrazilianDebenture debenture = new BrazilianDebenture(
+            name,
+            symbol,
+            terms,
+            oracle,
+            token,
+            msg.sender,  // issuer is the caller
+            trustee
+        );
+
+        address debentureAddress = address(debenture);
+
+        // Register it
+        allDebentures.push(debentureAddress);
+        debenturesByISIN[terms.isinCode] = debentureAddress;
+        issuerDebentures[msg.sender].push(debentureAddress);
+
+        emit DebentureCreated(
+            debentureAddress,
+            terms.isinCode,
+            name,
+            symbol,
+            msg.sender,
+            terms.vne,
+            terms.totalSupplyUnits
+        );
+
+        return debentureAddress;
     }
 
     /**

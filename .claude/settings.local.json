@@ -20,7 +20,10 @@
       "Bash(python3 -m venv:*)",
       "Bash(source venv/bin/activate:*)",
       "Bash(pip install:*)",
-      "Bash(npx hardhat clean)"
+      "Bash(npx hardhat clean)",
+      "Bash(npx hardhat verify --network arbitrumSepolia 0x4Cf29FE106a28BD1ce7808DA6766845808dAF5D4 \"0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe\")",
+      "Bash(npx hardhat size-contracts)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

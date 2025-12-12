@@ -23,11 +23,73 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace BrazilianDebenture {
+  export type DebentureTermsStruct = {
+    vne: BigNumberish;
+    totalSupplyUnits: BigNumberish;
+    issueDate: BigNumberish;
+    maturityDate: BigNumberish;
+    anniversaryDay: BigNumberish;
+    lockUpEndDate: BigNumberish;
+    rateType: BigNumberish;
+    fixedRate: BigNumberish;
+    percentDI: BigNumberish;
+    couponFrequencyDays: BigNumberish;
+    amortType: BigNumberish;
+    isinCode: string;
+    cetipCode: string;
+    series: string;
+    hasRepactuacao: boolean;
+    hasEarlyRedemption: boolean;
+    comboId: BytesLike;
+  };
+
+  export type DebentureTermsStructOutput = [
+    vne: bigint,
+    totalSupplyUnits: bigint,
+    issueDate: bigint,
+    maturityDate: bigint,
+    anniversaryDay: bigint,
+    lockUpEndDate: bigint,
+    rateType: bigint,
+    fixedRate: bigint,
+    percentDI: bigint,
+    couponFrequencyDays: bigint,
+    amortType: bigint,
+    isinCode: string,
+    cetipCode: string,
+    series: string,
+    hasRepactuacao: boolean,
+    hasEarlyRedemption: boolean,
+    comboId: string
+  ] & {
+    vne: bigint;
+    totalSupplyUnits: bigint;
+    issueDate: bigint;
+    maturityDate: bigint;
+    anniversaryDay: bigint;
+    lockUpEndDate: bigint;
+    rateType: bigint;
+    fixedRate: bigint;
+    percentDI: bigint;
+    couponFrequencyDays: bigint;
+    amortType: bigint;
+    isinCode: string;
+    cetipCode: string;
+    series: string;
+    hasRepactuacao: boolean;
+    hasEarlyRedemption: boolean;
+    comboId: string;
+  };
+}
+
 export interface SimpleDebentureRegistryInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "allDebentures"
+      | "createDebenture"
       | "debenturesByISIN"
+      | "defaultPaymentToken"
       | "getAllDebentures"
       | "getIssuerDebentures"
       | "getTotalDebentures"
@@ -40,7 +102,10 @@ export interface SimpleDebentureRegistryInterface extends Interface {
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "DebentureRegistered" | "OwnershipTransferred"
+    nameOrSignatureOrTopic:
+      | "DebentureCreated"
+      | "DebentureRegistered"
+      | "OwnershipTransferred"
   ): EventFragment;
 
   encodeFunctionData(
@@ -48,8 +113,22 @@ export interface SimpleDebentureRegistryInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "createDebenture",
+    values: [
+      string,
+      string,
+      BrazilianDebenture.DebentureTermsStruct,
+      AddressLike,
+      AddressLike
+    ]
+  ): string;
+  encodeFunctionData(
     functionFragment: "debenturesByISIN",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "defaultPaymentToken",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getAllDebentures",
@@ -87,7 +166,15 @@ export interface SimpleDebentureRegistryInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "createDebenture",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "debenturesByISIN",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "defaultPaymentToken",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -120,6 +207,40 @@ export interface SimpleDebentureRegistryInterface extends Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+}
+
+export namespace DebentureCreatedEvent {
+  export type InputTuple = [
+    debentureAddress: AddressLike,
+    isinCode: string,
+    name: string,
+    symbol: string,
+    issuer: AddressLike,
+    vne: BigNumberish,
+    totalSupply: BigNumberish
+  ];
+  export type OutputTuple = [
+    debentureAddress: string,
+    isinCode: string,
+    name: string,
+    symbol: string,
+    issuer: string,
+    vne: bigint,
+    totalSupply: bigint
+  ];
+  export interface OutputObject {
+    debentureAddress: string;
+    isinCode: string;
+    name: string;
+    symbol: string;
+    issuer: string;
+    vne: bigint;
+    totalSupply: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace DebentureRegisteredEvent {
@@ -202,7 +323,21 @@ export interface SimpleDebentureRegistry extends BaseContract {
 
   allDebentures: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
 
+  createDebenture: TypedContractMethod<
+    [
+      name: string,
+      symbol: string,
+      terms: BrazilianDebenture.DebentureTermsStruct,
+      paymentToken: AddressLike,
+      trustee: AddressLike
+    ],
+    [string],
+    "nonpayable"
+  >;
+
   debenturesByISIN: TypedContractMethod<[arg0: string], [string], "view">;
+
+  defaultPaymentToken: TypedContractMethod<[], [string], "view">;
 
   getAllDebentures: TypedContractMethod<[], [string[]], "view">;
 
@@ -246,8 +381,24 @@ export interface SimpleDebentureRegistry extends BaseContract {
     nameOrSignature: "allDebentures"
   ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
   getFunction(
+    nameOrSignature: "createDebenture"
+  ): TypedContractMethod<
+    [
+      name: string,
+      symbol: string,
+      terms: BrazilianDebenture.DebentureTermsStruct,
+      paymentToken: AddressLike,
+      trustee: AddressLike
+    ],
+    [string],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "debenturesByISIN"
   ): TypedContractMethod<[arg0: string], [string], "view">;
+  getFunction(
+    nameOrSignature: "defaultPaymentToken"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "getAllDebentures"
   ): TypedContractMethod<[], [string[]], "view">;
@@ -285,6 +436,13 @@ export interface SimpleDebentureRegistry extends BaseContract {
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
 
   getEvent(
+    key: "DebentureCreated"
+  ): TypedContractEvent<
+    DebentureCreatedEvent.InputTuple,
+    DebentureCreatedEvent.OutputTuple,
+    DebentureCreatedEvent.OutputObject
+  >;
+  getEvent(
     key: "DebentureRegistered"
   ): TypedContractEvent<
     DebentureRegisteredEvent.InputTuple,
@@ -300,6 +458,17 @@ export interface SimpleDebentureRegistry extends BaseContract {
   >;
 
   filters: {
+    "DebentureCreated(address,string,string,string,address,uint256,uint256)": TypedContractEvent<
+      DebentureCreatedEvent.InputTuple,
+      DebentureCreatedEvent.OutputTuple,
+      DebentureCreatedEvent.OutputObject
+    >;
+    DebentureCreated: TypedContractEvent<
+      DebentureCreatedEvent.InputTuple,
+      DebentureCreatedEvent.OutputTuple,
+      DebentureCreatedEvent.OutputObject
+    >;
+
     "DebentureRegistered(address,string,address)": TypedContractEvent<
       DebentureRegisteredEvent.InputTuple,
       DebentureRegisteredEvent.OutputTuple,
