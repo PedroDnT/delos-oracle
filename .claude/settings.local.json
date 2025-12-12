@@ -23,7 +23,9 @@
       "Bash(npx hardhat clean)",
       "Bash(npx hardhat verify --network arbitrumSepolia 0x4Cf29FE106a28BD1ce7808DA6766845808dAF5D4 \"0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe\")",
       "Bash(npx hardhat size-contracts)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx hardhat verify:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

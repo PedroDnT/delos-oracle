@@ -1,7 +1,7 @@
-// Import ABIs from typechain-generated files
+// Import ABIs from artifacts
 import BrazilianMacroOracleABI from '../../contracts/artifacts/contracts/BrazilianMacroOracle.sol/BrazilianMacroOracle.json'
-import DebentureFactoryABI from '../../contracts/artifacts/contracts/DebentureFactory.sol/DebentureFactory.json'
-import BrazilianDebentureABI from '../../contracts/artifacts/contracts/BrazilianDebenture.sol/BrazilianDebenture.json'
+import DebentureCloneFactoryABI from '../../contracts/artifacts/contracts/DebentureCloneFactory.sol/DebentureCloneFactory.json'
+import BrazilianDebentureCloneableABI from '../../contracts/artifacts/contracts/BrazilianDebentureCloneable.sol/BrazilianDebentureCloneable.json'
 
 export const CONTRACTS = {
   oracle: {
@@ -9,11 +9,13 @@ export const CONTRACTS = {
     abi: BrazilianMacroOracleABI.abi,
   },
   factory: {
-    address: (process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    abi: DebentureFactoryABI.abi,
+    // DebentureCloneFactory using EIP-1167 minimal proxy pattern
+    address: (process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x946ca8D40717D7C4bD0fCF134527b890D9b5DF6f') as `0x${string}`,
+    abi: DebentureCloneFactoryABI.abi,
   },
   debenture: {
-    abi: BrazilianDebentureABI.abi,
+    // BrazilianDebentureCloneable - the implementation contract
+    abi: BrazilianDebentureCloneableABI.abi,
   },
 }
 

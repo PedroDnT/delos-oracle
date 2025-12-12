@@ -10,7 +10,7 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 
 ---
 
-## Current Status: ~80% Complete
+## Current Status: 95% Complete ✅
 
 ### Phase 1: Oracle Infrastructure (COMPLETE)
 
@@ -23,15 +23,19 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 
 **Deployed**: Arbitrum Sepolia - `0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe`
 
-### Phase 2: Tokenized Debentures (IN PROGRESS)
+### Phase 2: Tokenized Debentures (COMPLETE)
 
-| Component | Status | Priority | Notes |
+| Component | Status | Location | Notes |
 |-----------|--------|----------|-------|
-| BrazilianDebenture.sol | ✅ Done | HIGH | 900+ lines, ANBIMA-compliant |
-| RestrictedToken.sol | ⚠️ Integrated | HIGH | ERC-1404 in BrazilianDebenture |
-| DebentureFactory.sol | ⚠️ Not Deployed | MEDIUM | Contract exists, deployment script missing |
-| Debenture Tests | ✅ Done | HIGH | 61/61 tests passing |
-| MockERC20.sol | ✅ Done | - | Test helper for payment token |
+| BrazilianDebentureCloneable.sol | ✅ Done | `contracts/contracts/` | Initializable version for Clone pattern |
+| DebentureCloneFactory.sol | ✅ Done | `contracts/contracts/` | EIP-1167 minimal proxy factory (6.7KB) |
+| BrazilianDebenture.sol | ✅ Done | `contracts/contracts/` | 900+ lines, ANBIMA-compliant |
+| Debenture Tests | ✅ Done | `contracts/test/` | 61/61 tests passing |
+| MockERC20.sol | ✅ Done | `contracts/mocks/` | Test helper for payment token |
+
+**Deployed on Arbitrum Sepolia:**
+- Implementation: `0x8856dd1f536169B8A82D8DA5476F9765b768f51D`
+- Factory: `0x946ca8D40717D7C4bD0fCF134527b890D9b5DF6f`
 
 ### Phase 3: Backend Services (COMPLETE)
 
@@ -44,14 +48,16 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 | services/data_store.py | ✅ Done | `backend/services/` | SQLite data versioning |
 | services/anomaly_detector.py | ✅ Done | `backend/services/` | Statistical anomaly detection |
 
-### Phase 4: Frontend (NOT STARTED)
+### Phase 4: Frontend (COMPLETE)
 
-| Component | Status | Priority |
-|-----------|--------|----------|
-| Next.js scaffold | ❌ Empty | MEDIUM |
-| Oracle dashboard | ❌ Planned | MEDIUM |
-| Debenture issuance UI | ❌ Planned | MEDIUM |
-| Portfolio management | ❌ Planned | LOW |
+| Component | Status | Location | Notes |
+|-----------|--------|----------|-------|
+| Next.js 14 App | ✅ Done | `frontend/` | Modern React with App Router |
+| Oracle Dashboard | ✅ Done | `frontend/app/page.tsx` | Real-time rate display |
+| Debenture Issuance UI | ✅ Done | `frontend/app/issue/` | Full form with validation |
+| Portfolio Management | ✅ Done | `frontend/app/portfolio/` | View all debentures |
+| RainbowKit + wagmi | ✅ Done | `frontend/lib/wagmi.ts` | Wallet connection |
+| Tailwind CSS | ✅ Done | `frontend/tailwind.config.ts` | Modern styling |
 
 ---
 
@@ -89,16 +95,16 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 │                              │                                   │
 │                              ▼                                   │
 │  ┌────────────────┐  ┌────────────────┐  ┌──────────────────┐  │
-│  │RestrictedToken │──│BrazilianDeben- │──│DebentureFactory  │  │
-│  │   (ERC-1404)   │  │     ture       │  │                  │  │
-│  │   ✅ (inline)  │  │      ✅        │  │       ❌         │  │
+│  │ Debenture      │──│BrazilianDeben- │──│DebentureClone-   │  │
+│  │ Cloneable ✅   │  │tureCloneable   │  │Factory ✅        │  │
+│  │(Implementation)│  │  (EIP-1167)    │  │ (6.7KB factory)  │  │
 │  └────────────────┘  └────────────────┘  └──────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      FRONTEND (Next.js)                          │
-│  Oracle Dashboard │ Issuance UI │ Portfolio │  ❌ Not Started   │
+│                      FRONTEND (Next.js 14)                       │
+│  Oracle Dashboard ✅ │ Issuance UI ✅ │ Portfolio ✅  │ Done!   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
