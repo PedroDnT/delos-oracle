@@ -41,7 +41,7 @@ function batchAddToWhitelist(address[] accounts) external;
 
 // Lock mechanisms
 function lockAddress(address account, uint256 until) external;
-```
+```oejct ti the POC hsd s brkubverabkr'9
 
 **Restriction Codes**:
 ```

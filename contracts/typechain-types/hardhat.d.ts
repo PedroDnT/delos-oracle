@@ -22,6 +22,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IAccessControl__factory>;
     getContractFactory(
+      name: "Ownable",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Ownable__factory>;
+    getContractFactory(
       name: "IERC1155Errors",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC1155Errors__factory>;
@@ -82,6 +86,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BrazilianMacroOracle__factory>;
     getContractFactory(
+      name: "DebentureFactory",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.DebentureFactory__factory>;
+    getContractFactory(
       name: "MockERC20",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockERC20__factory>;
@@ -97,6 +105,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IAccessControl>;
     getContractAt(
+      name: "Ownable",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Ownable>;
+    getContractAt(
       name: "IERC1155Errors",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -171,6 +184,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.BrazilianMacroOracle>;
+    getContractAt(
+      name: "DebentureFactory",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.DebentureFactory>;
     getContractAt(
       name: "MockERC20",
       address: string | ethers.Addressable,
@@ -186,6 +204,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IAccessControl>;
     deployContract(
+      name: "Ownable",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Ownable>;
+    deployContract(
       name: "IERC1155Errors",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC1155Errors>;
@@ -245,6 +267,10 @@ declare module "hardhat/types/runtime" {
       name: "BrazilianMacroOracle",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.BrazilianMacroOracle>;
+    deployContract(
+      name: "DebentureFactory",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DebentureFactory>;
     deployContract(
       name: "MockERC20",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -261,6 +287,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IAccessControl>;
     deployContract(
+      name: "Ownable",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Ownable>;
+    deployContract(
       name: "IERC1155Errors",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -335,6 +366,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.BrazilianMacroOracle>;
+    deployContract(
+      name: "DebentureFactory",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.DebentureFactory>;
     deployContract(
       name: "MockERC20",
       args: any[],

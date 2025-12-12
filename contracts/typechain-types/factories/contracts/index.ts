@@ -4,3 +4,4 @@
 export * as brazilianDebentureSol from "./BrazilianDebenture.sol";
 export * as mocks from "./mocks";
 export { BrazilianMacroOracle__factory } from "./BrazilianMacroOracle__factory";
+export { DebentureFactory__factory } from "./DebentureFactory__factory";

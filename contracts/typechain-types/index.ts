@@ -10,6 +10,8 @@ export type { AccessControl } from "./@openzeppelin/contracts/access/AccessContr
 export { AccessControl__factory } from "./factories/@openzeppelin/contracts/access/AccessControl__factory";
 export type { IAccessControl } from "./@openzeppelin/contracts/access/IAccessControl";
 export { IAccessControl__factory } from "./factories/@openzeppelin/contracts/access/IAccessControl__factory";
+export type { Ownable } from "./@openzeppelin/contracts/access/Ownable";
+export { Ownable__factory } from "./factories/@openzeppelin/contracts/access/Ownable__factory";
 export type { IERC1155Errors } from "./@openzeppelin/contracts/interfaces/draft-IERC6093.sol/IERC1155Errors";
 export { IERC1155Errors__factory } from "./factories/@openzeppelin/contracts/interfaces/draft-IERC6093.sol/IERC1155Errors__factory";
 export type { IERC20Errors } from "./@openzeppelin/contracts/interfaces/draft-IERC6093.sol/IERC20Errors";
@@ -40,5 +42,7 @@ export type { IBrazilianMacroOracle } from "./contracts/BrazilianDebenture.sol/I
 export { IBrazilianMacroOracle__factory } from "./factories/contracts/BrazilianDebenture.sol/IBrazilianMacroOracle__factory";
 export type { BrazilianMacroOracle } from "./contracts/BrazilianMacroOracle";
 export { BrazilianMacroOracle__factory } from "./factories/contracts/BrazilianMacroOracle__factory";
+export type { DebentureFactory } from "./contracts/DebentureFactory";
+export { DebentureFactory__factory } from "./factories/contracts/DebentureFactory__factory";
 export type { MockERC20 } from "./contracts/mocks/MockERC20";
 export { MockERC20__factory } from "./factories/contracts/mocks/MockERC20__factory";

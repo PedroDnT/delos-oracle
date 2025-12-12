@@ -7,7 +7,19 @@
       "Bash(npx hardhat test:*)",
       "Bash(npx hardhat compile:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pip-audit:*)",
+      "Bash(wc:*)",
+      "Bash(npm test:*)",
+      "Bash(npx hardhat --version)",
+      "Bash(./node_modules/.bin/hardhat test:*)",
+      "Bash(grep:*)",
+      "Bash(npm install:*)",
+      "Bash(npx hardhat run:*)",
+      "Bash(git checkout:*)",
+      "Bash(python3 -m venv:*)",
+      "Bash(source venv/bin/activate:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []
