@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DELOS Platform - Interactive Flow Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        .animate-pulse-custom {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen p-6">
+    <div class="max-w-7xl mx-auto space-y-6" id="app">
+        <!-- Header -->
+        <div class="text-center space-y-4 py-8">
+            <h1 class="text-5xl font-bold text-white tracking-tight">DELOS Platform</h1>
+            <p class="text-xl text-blue-200">Brazilian Macro Oracle for Tokenized Securities</p>
+            <div class="flex gap-4 justify-center items-center text-sm">
+                <span class="px-3 py-1 border border-blue-400 text-blue-200 rounded-full">Arbitrum Sepolia</span>
+                <span class="px-3 py-1 border border-green-400 text-green-200 rounded-full">EIP-1167 Clone Pattern</span>
+                <span class="px-3 py-1 border border-purple-400 text-purple-200 rounded-full">Chainlink Compatible</span>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+            <div class="flex gap-4 items-center justify-center">
+                <button id="playBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2">
+                    <span id="playText">Start Demo</span>
+                </button>
+                <button id="resetBtn" class="px-6 py-3 border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg font-semibold">
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Flow Visualization -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6" id="stepsContainer"></div>
+
+        <!-- Details Card -->
+        <div id="detailsCard" class="hidden"></div>
+
+        <!-- Completion Card -->
+        <div id="completionCard" class="hidden"></div>
+
+        <!-- Architecture Info -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-lg">
+            <div class="p-6 border-b border-slate-700">
+                <h3 class="text-white text-xl font-semibold">Platform Architecture</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-blue-400">Smart Contracts</h4>
+                        <div class="space-y-1 text-slate-300 font-mono text-xs">
+                            <p>Oracle: 0xe52d06...8fe</p>
+                            <p>Factory: 0x946ca8...6f</p>
+                            <p>Implementation: 0x8856dd...51D</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-green-400">Technology Stack</h4>
+                        <div class="space-y-1 text-slate-300">
+                            <p>• Solidity 0.8.20</p>
+                            <p>• EIP-1167 Clones</p>
+                            <p>• ERC-1404 (Restricted)</p>
+                            <p>• Chainlink Compatible</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-purple-400">Key Features</h4>
+                        <div class="space-y-1 text-slate-300">
+                            <p>• 6 BCB macro rates</p>
+                            <p>• 98% gas savings</p>
+                            <p>• Transfer restrictions</p>
+                            <p>• Automated coupons</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                id: 1,
+                title: 'Fetch BCB Rates',
+                description: 'Retrieve macroeconomic indicators from Banco Central do Brasil API',
+                icon: '📊',
+                data: [
+                    { rate: 'IPCA', value: '4.50%', desc: 'Consumer Price Index' },
+                    { rate: 'CDI', value: '11.15%', desc: 'Interbank Deposit Rate' },
+                    { rate: 'SELIC', value: '11.25%', desc: 'Central Bank Target Rate' },
+                    { rate: 'PTAX', value: '5.95', desc: 'USD/BRL Exchange Rate' },
+                    { rate: 'IGPM', value: '0.47%', desc: 'General Market Price Index' },
+                    { rate: 'TR', value: '0.09%', desc: 'Reference Rate' }
+                ]
+            },
+            {
+                id: 2,
+                title: 'Update Oracle',
+                description: 'Push rates to BrazilianMacroOracle contract on Arbitrum Sepolia',
+                icon: '☁️',
+                data: {
+                    address: '0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe',
+                    chain: 'Arbitrum Sepolia',
+                    chainId: '421614',
+                    precision: '8 decimals (Chainlink standard)'
+                }
+            },
+            {
+                id: 3,
+                title: 'Create Debenture',
+                description: 'Deploy minimal proxy clone via DebentureCloneFactory (EIP-1167)',
+                icon: '🪙',
+                data: {
+                    factory: '0x946ca8D40717D7C4bD0fCF134527b890D9b5DF6f',
+                    implementation: '0x8856dd1f536169B8A82D8DA5476F9765b768f51D',
+                    name: 'Petrobras IPCA+ 2026',
+                    symbol: 'PETR26',
+                    isin: 'BRPETR000001',
+                    vne: 'R$ 1,000.00',
+                    supply: '10,000 units',
+                    totalValue: 'R$ 10,000,000.00',
+                    rateType: 'IPCA + 5.00%',
+                    maturity: '2 years',
+                    gas: '~45,000 (98% savings)',
+                    size: '~45 bytes'
+                }
+            },
+            {
+                id: 4,
+                title: 'Record Coupon',
+                description: 'Record semi-annual coupon payment for debenture holders',
+                icon: '📄',
+                data: {
+                    frequency: 'Semi-annual (180 days)',
+                    rate: '2.5% per period',
+                    puPerUnit: 'R$ 25.00',
+                    totalCoupon: 'R$ 250,000.00',
+                    claimable: 'Yes - via claimAllCoupons()'
+                }
+            }
+        ];
+
+        let currentStep = 0;
+        let isPlaying = false;
+        let progress = 0;
+        let interval;
+
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = steps.map((step, idx) => {
+                const isActive = idx === currentStep;
+                const isComplete = idx < currentStep;
+                const isPending = idx > currentStep;
+
+                const borderColor = isActive ? 'border-blue-500 ring-2 ring-blue-500' :
+                                  isComplete ? 'border-green-600' : 'border-slate-700';
+                const bgColor = isActive ? 'bg-blue-900/50' :
+                              isComplete ? 'bg-green-900/30' : 'bg-slate-800/30';
+
+                return `
+                    <div class="relative">
+                        ${idx < steps.length - 1 ? `
+                            <div class="hidden md:block absolute top-24 left-full w-6 -ml-3 z-10">
+                                <span class="text-2xl ${isComplete ? 'text-green-500' : isActive ? 'text-blue-500 animate-pulse-custom' : 'text-slate-600'}">→</span>
+                            </div>
+                        ` : ''}
+
+                        <div class="relative transition-all duration-500 ${bgColor} border ${borderColor} rounded-lg">
+                            <div class="p-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-3 rounded-lg ${isActive ? 'bg-blue-500' : isComplete ? 'bg-green-500' : 'bg-slate-700'}">
+                                        <span class="text-2xl">${step.icon}</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            ${isComplete ? '<span class="text-green-500">✓</span>' :
+                                              isActive ? '<span class="text-blue-500 animate-pulse-custom">●</span>' :
+                                              '<span class="text-slate-600">○</span>'}
+                                            <span class="px-2 py-0.5 border border-current rounded text-xs">Step ${step.id}</span>
+                                        </div>
+                                        <h3 class="text-white font-semibold">${step.title}</h3>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-slate-300 mt-2">${step.description}</p>
+                            </div>
+
+                            ${isActive ? `
+                                <div class="p-6 pt-0 space-y-3">
+                                    <div class="w-full bg-slate-700 rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full transition-all" style="width: ${progress}%"></div>
+                                    </div>
+                                    <p class="text-xs text-slate-400 text-center">Processing... ${Math.round(progress)}%</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDetails() {
+            const card = document.getElementById('detailsCard');
+            if (currentStep >= steps.length || !steps[currentStep].data) {
+                card.classList.add('hidden');
+                return;
+            }
+
+            card.classList.remove('hidden');
+            const step = steps[currentStep];
+            const data = step.data;
+
+            let content = '';
+            if (Array.isArray(data)) {
+                content = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${data.map(item => `
+                            <div class="p-4 rounded-lg bg-slate-900/50 border border-slate-700 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-blue-400">${item.rate}</span>
+                                    <span class="text-lg font-bold text-green-400">${item.value}</span>
+                                </div>
+                                <p class="text-xs text-slate-400">${item.desc}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                content = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${Object.entries(data).map(([key, value]) => `
+                            <div class="flex flex-col space-y-1 p-3 rounded bg-slate-900/50">
+                                <span class="text-xs text-slate-400 uppercase tracking-wide">
+                                    ${key.replace(/([A-Z])/g, ' $1').trim()}
+                                </span>
+                                <span class="text-sm text-slate-200 font-mono">${value}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="bg-slate-800/50 border border-slate-700 rounded-lg animate-fade-in">
+                    <div class="p-6 border-b border-slate-700">
+                        <h3 class="text-2xl text-white flex items-center gap-2">
+                            <span>${step.icon}</span>
+                            ${step.title} - Details
+                        </h3>
+                    </div>
+                    <div class="p-6">${content}</div>
+                </div>
+            `;
+        }
+
+        function renderCompletion() {
+            const card = document.getElementById('completionCard');
+            if (currentStep < steps.length) {
+                card.classList.add('hidden');
+                return;
+            }
+
+            card.classList.remove('hidden');
+            card.innerHTML = `
+                <div class="bg-gradient-to-r from-green-900/50 to-blue-900/50 border border-green-500 rounded-lg animate-fade-in">
+                    <div class="p-8 text-center space-y-4">
+                        <div class="text-green-500 text-6xl">✓</div>
+                        <h2 class="text-3xl font-bold text-white">Demo Complete! 🎉</h2>
+                        <p class="text-lg text-green-200">Successfully demonstrated the complete DELOS platform flow</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-left">
+                            <div class="p-4 rounded-lg bg-slate-900/50">
+                                <h3 class="font-semibold text-white mb-2">Oracle Updated</h3>
+                                <p class="text-sm text-slate-300">6 rates published on-chain with Chainlink compatibility</p>
+                            </div>
+                            <div class="p-4 rounded-lg bg-slate-900/50">
+                                <h3 class="font-semibold text-white mb-2">Debenture Created</h3>
+                                <p class="text-sm text-slate-300">Minimal proxy clone deployed with 98% gas savings</p>
+                            </div>
+                            <div class="p-4 rounded-lg bg-slate-900/50">
+                                <h3 class="font-semibold text-white mb-2">Coupon Recorded</h3>
+                                <p class="text-sm text-slate-300">R$ 250,000 ready for holders to claim</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 space-y-2 text-sm text-slate-300">
+                            <p>Next steps:</p>
+                            <ul class="list-disc list-inside space-y-1 text-left max-w-2xl mx-auto">
+                                <li>Visit <code class="text-blue-400">http://localhost:3000/portfolio</code> to see your debenture</li>
+                                <li>Call <code class="text-blue-400">claimAllCoupons()</code> to claim coupon payments</li>
+                                <li>Check <a href="https://sepolia.arbiscan.io" target="_blank" class="text-blue-400 hover:underline">Arbiscan</a> for transaction details</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function update() {
+            renderSteps();
+            renderDetails();
+            renderCompletion();
+
+            const playText = document.getElementById('playText');
+            if (isPlaying) {
+                playText.textContent = 'Pause';
+            } else if (currentStep >= steps.length) {
+                playText.textContent = 'Restart Demo';
+            } else {
+                playText.textContent = 'Start Demo';
+            }
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (currentStep >= steps.length) {
+                currentStep = 0;
+                progress = 0;
+            }
+            isPlaying = !isPlaying;
+
+            if (isPlaying) {
+                interval = setInterval(() => {
+                    progress += 2;
+                    if (progress >= 100) {
+                        progress = 0;
+                        currentStep++;
+                        if (currentStep >= steps.length) {
+                            isPlaying = false;
+                            clearInterval(interval);
+                        }
+                    }
+                    update();
+                }, 50);
+            } else {
+                clearInterval(interval);
+            }
+            update();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            currentStep = 0;
+            progress = 0;
+            isPlaying = false;
+            clearInterval(interval);
+            update();
+        });
+
+        // Initial render
+        update();
+    </script>
+</body>
+</html>
