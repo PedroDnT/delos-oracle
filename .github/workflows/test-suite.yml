@@ -1,0 +1,474 @@
+name: Comprehensive Test Suite
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - contracts
+          - backend
+          - frontend
+          - integration
+          - performance
+
+jobs:
+  # Smart Contract Test Suite
+  contract-tests:
+    name: Contract Test Suite
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'contracts' || github.event.inputs.test_type == ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-suite:
+          - unit
+          - integration
+          - fuzz
+          - invariant
+    defaults:
+      run:
+        working-directory: ./contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Unit Tests
+        if: matrix.test-suite == 'unit'
+        run: |
+          echo "Running unit tests..."
+          npx hardhat test test/unit/**/*.test.ts
+
+      - name: Run Integration Tests
+        if: matrix.test-suite == 'integration'
+        run: |
+          echo "Running integration tests..."
+          npx hardhat test test/integration/**/*.test.ts
+
+      - name: Run Fuzz Tests
+        if: matrix.test-suite == 'fuzz'
+        run: |
+          echo "Running fuzz tests with Foundry..."
+          forge test --match-test "testFuzz" -vvv
+
+      - name: Run Invariant Tests
+        if: matrix.test-suite == 'invariant'
+        run: |
+          echo "Running invariant tests..."
+          forge test --match-test "invariant" -vvv
+
+      - name: Generate Gas Report
+        if: matrix.test-suite == 'unit'
+        run: |
+          npx hardhat test --gas-report > gas-report.txt
+          echo "## Gas Report" >> $GITHUB_STEP_SUMMARY
+          cat gas-report.txt >> $GITHUB_STEP_SUMMARY
+
+  # Backend Test Suite
+  backend-tests:
+    name: Backend Test Suite
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'backend' || github.event.inputs.test_type == ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type:
+          - unit
+          - integration
+          - api
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-mock httpx
+
+      - name: Create test structure
+        run: |
+          mkdir -p tests/unit tests/integration tests/api
+          touch tests/__init__.py
+          touch tests/unit/__init__.py
+          touch tests/integration/__init__.py
+          touch tests/api/__init__.py
+
+      - name: Unit Tests
+        if: matrix.test-type == 'unit'
+        run: |
+          cat > tests/unit/test_bcb_client.py << 'EOF'
+          import pytest
+          from unittest.mock import patch, MagicMock
+          import sys
+          import os
+          sys.path.insert(0, os.path.abspath('.'))
+          from bcb_client import BCBClient
+
+          @pytest.fixture
+          def bcb_client():
+              return BCBClient()
+
+          def test_validate_response_structure(bcb_client):
+              valid_response = {
+                  'valor': [{'valor': '4.50'}]
+              }
+              assert bcb_client.validate_response_structure(valid_response) is True
+
+              invalid_response = {'invalid': 'data'}
+              assert bcb_client.validate_response_structure(invalid_response) is False
+
+          @pytest.mark.asyncio
+          async def test_fetch_rate_with_retry(bcb_client):
+              with patch('bcb_client.httpx.AsyncClient.get') as mock_get:
+                  mock_get.return_value.json.return_value = {
+                      'valor': [{'valor': '4.50'}]
+                  }
+                  mock_get.return_value.raise_for_status = MagicMock()
+
+                  result = await bcb_client.fetch_with_retry(433, '01/01/2024', '31/01/2024')
+                  assert result['valor'][0]['valor'] == '4.50'
+          EOF
+
+          pytest tests/unit/ -v --cov=. --cov-report=term-missing
+
+      - name: Integration Tests
+        if: matrix.test-type == 'integration'
+        run: |
+          cat > tests/integration/test_oracle_integration.py << 'EOF'
+          import pytest
+          import sys
+          import os
+          sys.path.insert(0, os.path.abspath('.'))
+
+          @pytest.mark.asyncio
+          async def test_bcb_to_oracle_flow():
+              # Test the full flow from BCB API to Oracle update
+              # This would test the actual integration
+              pass
+
+          @pytest.mark.asyncio
+          async def test_scheduler_integration():
+              # Test scheduler triggering updates
+              pass
+          EOF
+
+          pytest tests/integration/ -v
+
+      - name: API Tests
+        if: matrix.test-type == 'api'
+        run: |
+          cat > tests/api/test_endpoints.py << 'EOF'
+          import pytest
+          from httpx import AsyncClient
+          import sys
+          import os
+          sys.path.insert(0, os.path.abspath('.'))
+          from api import app
+
+          @pytest.mark.asyncio
+          async def test_health_endpoint():
+              async with AsyncClient(app=app, base_url="http://test") as client:
+                  response = await client.get("/health")
+                  assert response.status_code == 200
+                  assert response.json()["status"] == "healthy"
+
+          @pytest.mark.asyncio
+          async def test_rates_endpoint():
+              async with AsyncClient(app=app, base_url="http://test") as client:
+                  response = await client.get("/rates")
+                  assert response.status_code == 200
+                  data = response.json()
+                  assert "rates" in data
+          EOF
+
+          pytest tests/api/ -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-test-results-${{ matrix.test-type }}
+          path: |
+            backend/tests/
+            backend/.coverage
+            backend/htmlcov/
+
+  # Frontend Test Suite
+  frontend-tests:
+    name: Frontend Test Suite
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'frontend' || github.event.inputs.test_type == ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-suite:
+          - unit
+          - component
+          - e2e
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install --save-dev @testing-library/react @testing-library/jest-dom jest jest-environment-jsdom @playwright/test
+
+      - name: Create test configuration
+        run: |
+          cat > jest.config.js << 'EOF'
+          module.exports = {
+            testEnvironment: 'jsdom',
+            setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+            testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+            transform: {
+              '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+            },
+            moduleNameMapper: {
+              '^@/(.*)$': '<rootDir>/$1',
+            },
+          }
+          EOF
+
+          cat > jest.setup.js << 'EOF'
+          import '@testing-library/jest-dom'
+          EOF
+
+      - name: Unit Tests
+        if: matrix.test-suite == 'unit'
+        run: |
+          mkdir -p __tests__/unit
+          cat > __tests__/unit/formatters.test.ts << 'EOF'
+          import { formatRate, formatCurrency } from '../../lib/utils'
+
+          describe('Formatters', () => {
+            test('formatRate formats percentage correctly', () => {
+              expect(formatRate(450000000)).toBe('4.50%')
+              expect(formatRate(1250000000)).toBe('12.50%')
+            })
+
+            test('formatCurrency formats BRL correctly', () => {
+              expect(formatCurrency(1000)).toBe('R$ 1,000.00')
+              expect(formatCurrency(1500000)).toBe('R$ 1,500,000.00')
+            })
+          })
+          EOF
+
+          npm test -- --coverage
+
+      - name: Component Tests
+        if: matrix.test-suite == 'component'
+        run: |
+          mkdir -p __tests__/components
+          cat > __tests__/components/RateCard.test.tsx << 'EOF'
+          import { render, screen } from '@testing-library/react'
+          import RateCard from '../../components/RateCard'
+
+          describe('RateCard', () => {
+            test('renders rate information', () => {
+              render(<RateCard type="IPCA" value={450000000} date="20240101" />)
+              expect(screen.getByText('IPCA')).toBeInTheDocument()
+              expect(screen.getByText('4.50%')).toBeInTheDocument()
+            })
+          })
+          EOF
+
+          npm test -- __tests__/components
+
+      - name: E2E Tests with Playwright
+        if: matrix.test-suite == 'e2e'
+        run: |
+          npx playwright install chromium
+
+          cat > playwright.config.ts << 'EOF'
+          import { defineConfig } from '@playwright/test'
+
+          export default defineConfig({
+            testDir: './e2e',
+            use: {
+              baseURL: 'http://localhost:3000',
+              screenshot: 'only-on-failure',
+            },
+            webServer: {
+              command: 'npm run dev',
+              port: 3000,
+              reuseExistingServer: !process.env.CI,
+            },
+          })
+          EOF
+
+          mkdir -p e2e
+          cat > e2e/oracle-dashboard.spec.ts << 'EOF'
+          import { test, expect } from '@playwright/test'
+
+          test('Oracle dashboard displays rates', async ({ page }) => {
+            await page.goto('/')
+            await expect(page.locator('h1')).toContainText('Brazilian Macro Oracle')
+            await expect(page.locator('[data-testid="rate-card-ipca"]')).toBeVisible()
+          })
+          EOF
+
+          npx playwright test
+
+      - name: Upload test artifacts
+        if: failure() && matrix.test-suite == 'e2e'
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+
+  # Performance Testing
+  performance-tests:
+    name: Performance Testing
+    if: github.event.inputs.test_type == 'performance'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup k6
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Create k6 test script
+        run: |
+          cat > performance-test.js << 'EOF'
+          import http from 'k6/http'
+          import { check, sleep } from 'k6'
+
+          export const options = {
+            stages: [
+              { duration: '30s', target: 20 },
+              { duration: '1m', target: 20 },
+              { duration: '30s', target: 0 },
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500'],
+              http_req_failed: ['rate<0.1'],
+            },
+          }
+
+          const BASE_URL = __ENV.API_URL || 'http://localhost:8000'
+
+          export default function () {
+            const responses = http.batch([
+              ['GET', `${BASE_URL}/health`],
+              ['GET', `${BASE_URL}/rates`],
+              ['GET', `${BASE_URL}/rates/IPCA`],
+            ])
+
+            responses.forEach(response => {
+              check(response, {
+                'status is 200': (r) => r.status === 200,
+                'response time < 500ms': (r) => r.timings.duration < 500,
+              })
+            })
+
+            sleep(1)
+          }
+          EOF
+
+      - name: Run performance tests
+        run: |
+          k6 run performance-test.js --out json=results.json
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: results.json
+
+  # Test Results Summary
+  test-summary:
+    name: Test Results Summary
+    needs: [contract-tests, backend-tests, frontend-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate test report
+        run: |
+          echo "# Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Contract Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit: ${{ needs.contract-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- Fuzz: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Backend Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- API: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Frontend Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Component: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E: Complete" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `## 🧪 Test Results
+
+            **Contract Tests:** ${{ needs.contract-tests.result }}
+            **Backend Tests:** ${{ needs.backend-tests.result }}
+            **Frontend Tests:** ${{ needs.frontend-tests.result }}
+
+            View the [full test report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            })

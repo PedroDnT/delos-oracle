@@ -1,0 +1,428 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  release:
+    types: [created]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  SOLIDITY_VERSION: '0.8.20'
+
+jobs:
+  # Smart Contract Tests & Security
+  contracts:
+    name: Smart Contracts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Cache Hardhat
+        uses: actions/cache@v3
+        with:
+          path: |
+            contracts/node_modules
+            contracts/cache
+            contracts/artifacts
+          key: ${{ runner.os }}-hardhat-${{ hashFiles('contracts/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-hardhat-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npx hardhat compile
+
+      - name: Run tests with coverage
+        run: npx hardhat coverage
+        env:
+          REPORT_GAS: true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./contracts/coverage.json
+          flags: contracts
+
+      - name: Slither Security Analysis
+        uses: crytic/slither-action@v0.3.0
+        continue-on-error: true
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          target: contracts/
+          sarif: results.sarif
+
+      - name: Upload Slither results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: results.sarif
+
+      - name: Contract Size Check
+        run: npx hardhat size-contracts
+
+      - name: Gas Reporter
+        run: |
+          echo "## Gas Report" >> $GITHUB_STEP_SUMMARY
+          npx hardhat test | grep -A 10 "Gas Reporter" >> $GITHUB_STEP_SUMMARY || true
+
+  # Backend Python Tests
+  backend:
+    name: Backend Services
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    strategy:
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-mock black flake8 mypy
+
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+      - name: Format check with black
+        run: black --check .
+
+      - name: Type check with mypy
+        run: mypy . --ignore-missing-imports
+        continue-on-error: true
+
+      - name: Run tests with pytest
+        run: |
+          pytest --cov=. --cov-report=xml --cov-report=term -v
+        env:
+          BCB_API_URL: https://api.bcb.gov.br
+          DATABASE_URL: sqlite:///test_db.sqlite
+
+      - name: Upload coverage
+        if: matrix.python == '3.11'
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./backend/coverage.xml
+          flags: backend
+
+  # Frontend Next.js Tests
+  frontend:
+    name: Frontend Application
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache Next.js
+        uses: actions/cache@v3
+        with:
+          path: |
+            frontend/.next/cache
+            frontend/node_modules
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_ORACLE_ADDRESS: ${{ secrets.ORACLE_ADDRESS }}
+          NEXT_PUBLIC_FACTORY_ADDRESS: ${{ secrets.FACTORY_ADDRESS }}
+          NEXT_PUBLIC_ARBITRUM_RPC: https://sepolia-rollup.arbitrum.io/rpc
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: |
+            frontend/.next
+            frontend/out
+          retention-days: 7
+
+  # Integration Tests
+  integration:
+    name: Integration Tests
+    needs: [contracts, backend, frontend]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Start local blockchain
+        run: |
+          anvil --fork-url ${{ secrets.ARBITRUM_SEPOLIA_RPC }} &
+          sleep 5
+
+      - name: Deploy contracts locally
+        working-directory: contracts
+        run: |
+          npm ci
+          npx hardhat run scripts/deploy.ts --network localhost
+
+      - name: Start backend services
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python api.py &
+          sleep 5
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          ORACLE_ADDRESS: ${{ env.DEPLOYED_ORACLE_ADDRESS }}
+
+      - name: Run E2E tests
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run test:e2e
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+
+  # Security Scanning
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Python Safety check
+        working-directory: backend
+        run: |
+          pip install safety
+          safety check --json
+
+      - name: NPM Audit - Contracts
+        working-directory: contracts
+        run: npm audit --production
+        continue-on-error: true
+
+      - name: NPM Audit - Frontend
+        working-directory: frontend
+        run: npm audit --production
+        continue-on-error: true
+
+      - name: GitLeaks secret scanning
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deploy to Testnet
+  deploy-testnet:
+    name: Deploy to Arbitrum Sepolia
+    needs: [integration, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: testnet
+      url: https://testnet.delos-oracle.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Deploy Oracle Contract
+        working-directory: contracts
+        run: |
+          npm ci
+          npx hardhat run scripts/deploy-oracle.ts --network arbitrumSepolia
+        env:
+          ARBITRUM_SEPOLIA_RPC: ${{ secrets.ARBITRUM_SEPOLIA_RPC }}
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+
+      - name: Deploy Factory Contract
+        working-directory: contracts
+        run: |
+          npx hardhat run scripts/deploy-factory.ts --network arbitrumSepolia
+        env:
+          ARBITRUM_SEPOLIA_RPC: ${{ secrets.ARBITRUM_SEPOLIA_RPC }}
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+
+      - name: Verify Contracts on Etherscan
+        working-directory: contracts
+        run: |
+          npx hardhat verify --network arbitrumSepolia ${{ env.DEPLOYED_ORACLE_ADDRESS }}
+          npx hardhat verify --network arbitrumSepolia ${{ env.DEPLOYED_FACTORY_ADDRESS }}
+        env:
+          ARBISCAN_API_KEY: ${{ secrets.ARBISCAN_API_KEY }}
+        continue-on-error: true
+
+      - name: Deploy Backend to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          service: delos-backend
+          image: gcr.io/${{ secrets.GCP_PROJECT }}/delos-backend:${{ github.sha }}
+          region: us-central1
+          env_vars: |
+            ORACLE_ADDRESS=${{ env.DEPLOYED_ORACLE_ADDRESS }}
+            FACTORY_ADDRESS=${{ env.DEPLOYED_FACTORY_ADDRESS }}
+            ARBITRUM_RPC=${{ secrets.ARBITRUM_SEPOLIA_RPC }}
+
+      - name: Deploy Frontend to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-args: '--prod'
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./frontend
+
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Testnet deployment completed: Oracle=${{ env.DEPLOYED_ORACLE_ADDRESS }}, Factory=${{ env.DEPLOYED_FACTORY_ADDRESS }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+
+  # Post-deployment verification
+  verify-deployment:
+    name: Verify Deployment
+    needs: deploy-testnet
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Verify Oracle is responding
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python -c "
+          from oracle_updater import OracleUpdater
+          import os
+          updater = OracleUpdater(
+              os.environ['ORACLE_ADDRESS'],
+              os.environ['ARBITRUM_SEPOLIA_RPC'],
+              os.environ['PRIVATE_KEY']
+          )
+          status = updater.get_status()
+          print(f'Oracle Status: {status}')
+          assert status['is_active'], 'Oracle is not active'
+          "
+        env:
+          ORACLE_ADDRESS: ${{ env.DEPLOYED_ORACLE_ADDRESS }}
+          ARBITRUM_SEPOLIA_RPC: ${{ secrets.ARBITRUM_SEPOLIA_RPC }}
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+
+      - name: Smoke test API endpoints
+        run: |
+          API_URL="https://api.delos-oracle.com"
+          curl -f ${API_URL}/health
+          curl -f ${API_URL}/rates
+          curl -f ${API_URL}/rates/IPCA
+
+      - name: Lighthouse performance test
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            https://testnet.delos-oracle.com
+            https://testnet.delos-oracle.com/issue
+            https://testnet.delos-oracle.com/portfolio
+          uploadArtifacts: true
+          temporaryPublicStorage: true
