@@ -25,7 +25,9 @@
       "Bash(npx hardhat size-contracts)",
       "Bash(ls:*)",
       "Bash(npx hardhat verify:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
