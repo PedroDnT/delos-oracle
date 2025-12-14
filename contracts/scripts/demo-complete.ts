@@ -14,7 +14,11 @@ async function main() {
   console.log("\n🚀 DELOS - Demonstração Completa");
   console.log("=".repeat(60));
 
-  const [issuer, investor1, investor2] = await ethers.getSigners();
+  const signers = await ethers.getSigners();
+  const issuer = signers[0];
+  const investor1 = signers.length > 1 ? signers[1] : issuer;
+  const investor2 = signers.length > 2 ? signers[2] : issuer;
+
   console.log("\n👥 Contas:");
   console.log("  Emissor:", issuer.address);
   console.log("  Investidor 1:", investor1.address);
@@ -32,43 +36,33 @@ async function main() {
   console.log("Oracle:", ORACLE_ADDRESS);
   console.log("\n📈 Taxas Atuais:");
 
-  // IPCA
-  const ipca = await oracle.getIPCA();
-  console.log(`  • IPCA: ${ethers.formatUnits(ipca.value, 8)}%`);
-  console.log(`    Data: ${new Date(Number(ipca.lastUpdate) * 1000).toLocaleDateString()}`);
+  const rates = ["IPCA", "CDI", "SELIC", "PTAX", "IGPM", "TR"];
+  const rateNames: Record<string, string> = {
+    IPCA: "IPCA",
+    CDI: "CDI",
+    SELIC: "SELIC",
+    PTAX: "PTAX (BRL/USD)",
+    IGPM: "IGP-M",
+    TR: "TR"
+  };
 
-  // CDI
-  const cdi = await oracle.getCDI();
-  console.log(`  • CDI: ${ethers.formatUnits(cdi.value, 8)}%`);
-  console.log(`    Data: ${new Date(Number(cdi.lastUpdate) * 1000).toLocaleDateString()}`);
+  for (const rate of rates) {
+    try {
+      const rateData = await oracle.getRateFull(rate);
+      const value = ethers.formatUnits(rateData[0], 8);
+      const date = new Date(Number(rateData[2]) * 1000).toLocaleDateString();
+      console.log(`  • ${rateNames[rate]}: ${value} (${date})`);
+    } catch (e) {
+      console.log(`  • ${rateNames[rate]}: (não disponível)`);
+    }
+  }
 
-  // SELIC
-  const selic = await oracle.getSELIC();
-  console.log(`  • SELIC: ${ethers.formatUnits(selic.value, 8)}%`);
-  console.log(`    Data: ${new Date(Number(selic.lastUpdate) * 1000).toLocaleDateString()}`);
-
-  // PTAX
-  const ptax = await oracle.getPTAX();
-  console.log(`  • PTAX: ${ethers.formatUnits(ptax.value, 8)} BRL/USD`);
-  console.log(`    Data: ${new Date(Number(ptax.lastUpdate) * 1000).toLocaleDateString()}`);
-
-  // IGP-M
-  const igpm = await oracle.getIGPM();
-  console.log(`  • IGP-M: ${ethers.formatUnits(igpm.value, 8)}%`);
-  console.log(`    Data: ${new Date(Number(igpm.lastUpdate) * 1000).toLocaleDateString()}`);
-
-  // TR
-  const tr = await oracle.getTR();
-  console.log(`  • TR: ${ethers.formatUnits(tr.value, 8)}%`);
-  console.log(`    Data: ${new Date(Number(tr.lastUpdate) * 1000).toLocaleDateString()}`);
-
-  // Verificar compatibilidade Chainlink
-  console.log("\n🔗 Compatibilidade Chainlink AggregatorV3:");
-  const latestRound = await oracle.latestRoundData();
-  console.log(`  • Round ID: ${latestRound.roundId}`);
-  console.log(`  • Answer: ${ethers.formatUnits(latestRound.answer, 8)}`);
-  console.log(`  • Decimals: ${await oracle.decimals()}`);
-  console.log(`  • Description: ${await oracle.description()}`);
+  // Verificar suporte de taxas
+  console.log("\n🔗 Taxas Suportadas:");
+  const supportedRates = await oracle.getSupportedRates();
+  supportedRates.forEach((rate: string) => {
+    console.log(`  • ${rate}`);
+  });
 
   // ===========================================================================
   // PARTE 2: FACTORY DE DEBÊNTURES
@@ -85,7 +79,7 @@ async function main() {
   // Deploy Mock Payment Token (BRL Stablecoin)
   console.log("\n💵 Deploying Mock Payment Token...");
   const MockERC20 = await ethers.getContractFactory("MockERC20");
-  const paymentToken = await MockERC20.deploy("Brazilian Real Token", "BRL");
+  const paymentToken = await MockERC20.deploy("Brazilian Real Token", "BRL", 6);
   await paymentToken.waitForDeployment();
   const paymentTokenAddress = await paymentToken.getAddress();
   console.log("  Payment Token:", paymentTokenAddress);
@@ -97,34 +91,37 @@ async function main() {
 
   // Criar nova debênture via factory
   console.log("\n📝 Criando nova debênture...");
-  const debentureParams = {
-    name: "Debênture DELOS Demo 2025",
-    symbol: "DELOS25",
-    issuer: issuer.address,
-    oracle: ORACLE_ADDRESS,
-    paymentToken: paymentTokenAddress,
-    totalSupply: ethers.parseUnits("1000000", 6), // 1M de reais
-    maturityDate: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60, // 1 ano
-    rateType: 3, // IPCA_SPREAD
-    rateValue: ethers.parseUnits("6.5", 6), // IPCA + 6.5%
-    couponFrequency: 30 * 24 * 60 * 60, // 30 dias (mensal)
-    amortizationType: 0, // BULLET (pagamento no vencimento)
-    earlyRedemptionAllowed: true
+
+  const now = Math.floor(Date.now() / 1000);
+  const maturityDate = now + 365 * 24 * 60 * 60; // 1 year
+
+  // DebentureTerms struct parameters
+  const terms = {
+    vne: ethers.parseUnits("1000", 6), // VNE: R$ 1.000
+    totalSupplyUnits: 1000n, // 1.000 units = 1M total
+    issueDate: now,
+    maturityDate: maturityDate,
+    anniversaryDay: 15,
+    lockUpEndDate: now + 30 * 24 * 60 * 60, // 30 days lock-up
+    rateType: 3, // IPCA_SPREAD (enum value)
+    fixedRate: ethers.parseUnits("6.5", 4), // 6.5% (4 decimals = basis points)
+    percentDI: 0,
+    couponFrequencyDays: 30,
+    amortType: 0, // BULLET
+    isinCode: "BRDELOS20250",
+    cetipCode: "DELOS25",
+    series: "SERIE001",
+    hasRepactuacao: true,
+    hasEarlyRedemption: true,
+    comboId: ethers.zeroPadValue("0x", 32)
   };
 
   const createTx = await factory.createDebenture(
-    debentureParams.name,
-    debentureParams.symbol,
-    debentureParams.issuer,
-    debentureParams.oracle,
-    debentureParams.paymentToken,
-    debentureParams.totalSupply,
-    debentureParams.maturityDate,
-    debentureParams.rateType,
-    debentureParams.rateValue,
-    debentureParams.couponFrequency,
-    debentureParams.amortizationType,
-    debentureParams.earlyRedemptionAllowed
+    "Debênture DELOS Demo 2025",
+    "DELOS25",
+    terms,
+    paymentTokenAddress,
+    issuer.address // trustee
   );
 
   console.log("  Aguardando confirmação...");

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx hardhat run:*)",
+      "Bash(timeout 180 npx hardhat run:*)"
+    ]
+  }
+}
