@@ -16,8 +16,54 @@ async function main() {
 
   const signers = await ethers.getSigners();
   const issuer = signers[0];
-  const investor1 = signers.length > 1 ? signers[1] : issuer;
-  const investor2 = signers.length > 2 ? signers[2] : issuer;
+  const provider = issuer.provider;
+  
+  // Create separate wallets for investors if not enough signers
+  // Ensure each investor has a unique address to avoid claim conflicts
+  let investor1, investor2;
+  if (signers.length > 2) {
+    investor1 = signers[1];
+    investor2 = signers[2];
+  } else if (signers.length > 1) {
+    investor1 = signers[1];
+    // Create a new wallet for investor2 to ensure different address
+    investor2 = ethers.Wallet.createRandom().connect(provider);
+  } else {
+    // Create new wallets for both investors to ensure different addresses
+    investor1 = ethers.Wallet.createRandom().connect(provider);
+    investor2 = ethers.Wallet.createRandom().connect(provider);
+  }
+  
+  // Ensure investors have different addresses from issuer
+  if (investor1.address.toLowerCase() === issuer.address.toLowerCase()) {
+    investor1 = ethers.Wallet.createRandom().connect(provider);
+  }
+  if (investor2.address.toLowerCase() === issuer.address.toLowerCase() || 
+      investor2.address.toLowerCase() === investor1.address.toLowerCase()) {
+    investor2 = ethers.Wallet.createRandom().connect(provider);
+  }
+
+  // Fund investor wallets if they don't have enough ETH for gas
+  // (Only needed for randomly created wallets, not for signers which already have ETH)
+  const minBalance = ethers.parseEther("0.01");
+  const investor1Balance = await provider.getBalance(investor1.address);
+  if (investor1Balance < minBalance) {
+    console.log(`  💰 Funding Investidor 1...`);
+    const tx1 = await issuer.sendTransaction({
+      to: investor1.address,
+      value: ethers.parseEther("0.1")
+    });
+    await tx1.wait();
+  }
+  const investor2Balance = await provider.getBalance(investor2.address);
+  if (investor2Balance < minBalance) {
+    console.log(`  💰 Funding Investidor 2...`);
+    const tx2 = await issuer.sendTransaction({
+      to: investor2.address,
+      value: ethers.parseEther("0.1")
+    });
+    await tx2.wait();
+  }
 
   console.log("\n👥 Contas:");
   console.log("  Emissor:", issuer.address);
@@ -272,12 +318,17 @@ async function main() {
 
   // 4.1 Teste de restrição de transferência (ERC-1404)
   console.log("\n🔒 Testando restrições de transferência (ERC-1404)...");
-  const [, , , nonWhitelisted] = await ethers.getSigners();
+  const allSigners = await ethers.getSigners();
+  // Use a random address that's not whitelisted for testing
+  // If we have 4+ signers, use the 4th one; otherwise use a generated address
+  const nonWhitelistedAddress = allSigners.length > 3 
+    ? allSigners[3].address 
+    : "0x1234567890123456789012345678901234567890"; // Dummy address for testing
 
   // Tentar transferir para não-whitelisted (deve falhar)
   const restrictionCode = await debenture.detectTransferRestriction(
     investor1.address,
-    nonWhitelisted.address,
+    nonWhitelistedAddress,
     100n // 100 whole tokens (contract uses 0 decimals)
   );
   console.log(`  Código de restrição: ${restrictionCode}`);
