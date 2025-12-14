@@ -135,7 +135,8 @@ def step_2_update_oracle(rates_data):
 
         for rate_name, _, _ in rates_data:
             try:
-                rate_data = oracle.functions.getRate(rate_name).call()
+                # Use getRateFull for complete rate data
+                rate_data = oracle.functions.getRateFull(rate_name).call()
                 value = rate_data[0] / 1e8  # 8 decimals
                 timestamp = rate_data[1]
                 real_date = rate_data[2]
@@ -170,15 +171,27 @@ def step_3_create_debenture():
     # Debenture parameters
     name = "Petrobras IPCA+ 2026"
     symbol = "PETR26"
-    isin = "BRPETR000001"
+    
+    # Generate unique ISIN code using timestamp (last 6 digits for exactly 12 chars)
+    # Format: BRPETR (6) + 6 digits = 12 characters total
+    now = int(time.time())
+    timestamp_str = str(now)[-6:].zfill(6)  # Ensure 6 digits with leading zeros
+    isin = f"BRPETR{timestamp_str}"[:12]  # Exactly 12 chars
+    
     vne = 1000  # R$ 1000 per unit
     total_supply = 10000
     maturity_years = 2
+    
+    # Generate unique ISIN code using timestamp (last 6 digits for exactly 12 chars)
+    # Format: BRPETR (6) + 6 digits = 12 characters total
+    now = int(time.time())
+    timestamp_str = str(now)[-6:].zfill(6)  # Ensure 6 digits with leading zeros
+    isin = f"BRPETR{timestamp_str}"[:12]  # Exactly 12 chars
 
     console.print(f"\n[bold]Debenture Details:[/]")
     console.print(f"  Name: [cyan]{name}[/]")
     console.print(f"  Symbol: [cyan]{symbol}[/]")
-    console.print(f"  ISIN: [cyan]{isin}[/]")
+    console.print(f"  ISIN: [cyan]{isin}[/] ({len(isin)} characters)")
     console.print(f"  VNE: [green]R$ {vne:,.2f}[/] per unit")
     console.print(f"  Total Supply: [green]{total_supply:,}[/] units")
     console.print(f"  Total Value: [green]R$ {vne * total_supply:,.2f}[/]")
@@ -192,8 +205,7 @@ def step_3_create_debenture():
     ) as progress:
         task = progress.add_task("[cyan]Preparing transaction...", total=4)
 
-        # Build terms
-        now = int(time.time())
+        # Build terms (now is already defined above)
         maturity_date = now + (maturity_years * 365 * 86400)
 
         terms = {
@@ -204,12 +216,12 @@ def step_3_create_debenture():
             'anniversaryDay': 15,
             'lockUpEndDate': now + (30 * 86400),
             'rateType': 3,  # IPCA_SPREAD
-            'fixedRate': 50000,  # 5.00% in 4 decimals
-            'percentDI': 100,
+            'fixedRate': 50000,  # 5.00% in 4 decimals (50000 = 5.0000%)
+            'percentDI': 0,  # Not used for IPCA_SPREAD
             'couponFrequencyDays': 180,  # Semi-annual
-            'amortType': 0,  # PERCENT_VNE
+            'amortType': 0,  # BULLET
             'isinCode': isin,
-            'cetipCode': '',
+            'cetipCode': 'PETR26',
             'series': '1a Serie',
             'hasRepactuacao': False,
             'hasEarlyRedemption': False,
@@ -256,8 +268,8 @@ def step_3_create_debenture():
                 terms['hasEarlyRedemption'],
                 terms['comboId']
             ),
-            "0x0000000000000000000000000000000000000000",  # Use default payment token
-            "0x0000000000000000000000000000000000000000"   # Trustee = issuer
+            "0x0000000000000000000000000000000000000000",  # Payment token (defaults to factory default)
+            account.address  # Trustee (same as issuer for demo)
         ).build_transaction({
             'from': account.address,
             'nonce': w3.eth.get_transaction_count(account.address),
