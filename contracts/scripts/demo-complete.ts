@@ -104,7 +104,7 @@ async function main() {
   // DebentureTerms struct parameters
   const terms = {
     vne: ethers.parseUnits("1000", 6), // VNE: R$ 1.000
-    totalSupplyUnits: 1000n, // 1.000 units = 1M total
+    totalSupplyUnits: 1000n, // 1000 whole tokens (contract uses 0 decimals)
     issueDate: now,
     maturityDate: maturityDate,
     anniversaryDay: 15,
@@ -160,7 +160,7 @@ async function main() {
   console.log("\nℹ️  Informações da Debênture:");
   console.log(`  Nome: ${await debenture.name()}`);
   console.log(`  Símbolo: ${await debenture.symbol()}`);
-  console.log(`  Total Supply: ${ethers.formatUnits(await debenture.totalSupply(), 6)} tokens`);
+  console.log(`  Total Supply: ${ethers.formatUnits(await debenture.totalSupply(), 0)} tokens`);
   console.log(`  Emissor: ${await debenture.issuer()}`);
   const debentureTerms = await debenture.terms();
   console.log(`  Vencimento: ${new Date(Number(debentureTerms.maturityDate) * 1000).toLocaleDateString()}`);
@@ -179,16 +179,17 @@ async function main() {
 
   // 3.3 Distribuir tokens
   console.log("\n💸 Distribuindo tokens...");
-  const amount1 = ethers.parseUnits("400000", 6); // 400k
-  const amount2 = ethers.parseUnits("300000", 6); // 300k
-  // Emissor fica com 300k
+  // Total supply is 1000 whole tokens (contract uses 0 decimals), so distribute: 400 to investor1, 300 to investor2, 300 remains with issuer
+  const amount1 = 400n; // 400 whole tokens
+  const amount2 = 300n; // 300 whole tokens
+  // Emissor fica com 300 tokens
 
   await debenture.transfer(investor1.address, amount1);
   await debenture.transfer(investor2.address, amount2);
 
-  console.log(`  • Investidor 1: ${ethers.formatUnits(amount1, 6)} tokens`);
-  console.log(`  • Investidor 2: ${ethers.formatUnits(amount2, 6)} tokens`);
-  console.log(`  • Emissor: ${ethers.formatUnits(await debenture.balanceOf(issuer.address), 6)} tokens`);
+  console.log(`  • Investidor 1: ${ethers.formatUnits(amount1, 0)} tokens`);
+  console.log(`  • Investidor 2: ${ethers.formatUnits(amount2, 0)} tokens`);
+  console.log(`  • Emissor: ${ethers.formatUnits(await debenture.balanceOf(issuer.address), 0)} tokens`);
 
   // 3.4 Registrar cupom
   console.log("\n📅 Registrando primeiro cupom...");
@@ -277,7 +278,7 @@ async function main() {
   const restrictionCode = await debenture.detectTransferRestriction(
     investor1.address,
     nonWhitelisted.address,
-    ethers.parseUnits("100", 6)
+    100n // 100 whole tokens (contract uses 0 decimals)
   );
   console.log(`  Código de restrição: ${restrictionCode}`);
   console.log(`  Mensagem: ${await debenture.messageForTransferRestriction(restrictionCode)}`);
