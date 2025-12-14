@@ -94,6 +94,10 @@ async function main() {
 
   const now = Math.floor(Date.now() / 1000);
   const maturityDate = now + 365 * 24 * 60 * 60; // 1 year
+  
+  // Generate unique ISIN code using timestamp (last 4 digits)
+  const timestampStr = now.toString().slice(-4);
+  const isinCode = `BRDELOS${timestampStr.padStart(4, '0')}`.slice(0, 12); // Ensure exactly 12 chars
 
   // DebentureTerms struct parameters
   const terms = {
@@ -108,7 +112,7 @@ async function main() {
     percentDI: 0,
     couponFrequencyDays: 30,
     amortType: 0, // BULLET
-    isinCode: "BRDELOS20250",
+    isinCode: isinCode,
     cetipCode: "DELOS25",
     series: "SERIE001",
     hasRepactuacao: true,
@@ -155,11 +159,12 @@ async function main() {
   console.log(`  Nome: ${await debenture.name()}`);
   console.log(`  Símbolo: ${await debenture.symbol()}`);
   console.log(`  Total Supply: ${ethers.formatUnits(await debenture.totalSupply(), 6)} tokens`);
-  console.log(`  Emissor: ${await debenture.issuerAddress()}`);
-  console.log(`  Vencimento: ${new Date(Number(await debenture.maturityDate()) * 1000).toLocaleDateString()}`);
+  console.log(`  Emissor: ${await debenture.issuer()}`);
+  const debentureTerms = await debenture.terms();
+  console.log(`  Vencimento: ${new Date(Number(debentureTerms.maturityDate) * 1000).toLocaleDateString()}`);
   console.log(`  Tipo de Taxa: IPCA + Spread`);
-  console.log(`  Spread: ${ethers.formatUnits(await debenture.rateValue(), 6)}%`);
-  console.log(`  Frequência de Cupom: Mensal`);
+  console.log(`  Spread: ${ethers.formatUnits(debentureTerms.fixedRate, 4)}%`);
+  console.log(`  Frequência de Cupom: ${debentureTerms.couponFrequencyDays} dias`);
 
   // 3.2 Adicionar investidores à whitelist (KYC)
   console.log("\n✅ Adicionando investidores à whitelist (KYC)...");
@@ -186,19 +191,35 @@ async function main() {
   // 3.4 Registrar cupom
   console.log("\n📅 Registrando primeiro cupom...");
   const couponDate = Math.floor(Date.now() / 1000);
-  await debenture.recordCoupon(couponDate);
+  
+  // Calculate PU per unit (e.g., 0.05 = 5% coupon per unit)
+  // Using 6 decimals for PU precision
+  const PRECISION_PU = 1000000n; // 6 decimals
+  const puPerUnit = ethers.parseUnits("0.05", 6); // 5% coupon per unit
+  
+  // Calculate total amount (assuming all tokens are eligible)
+  const totalSupply = await debenture.totalSupply();
+  const totalCouponAmount = (totalSupply * puPerUnit) / PRECISION_PU;
+  
+  await debenture.recordCoupon(puPerUnit, totalCouponAmount);
   console.log(`  Data do cupom: ${new Date(couponDate * 1000).toLocaleDateString()}`);
+  console.log(`  PU por unidade: ${ethers.formatUnits(puPerUnit, 6)}`);
+  console.log(`  Valor total: ${ethers.formatUnits(totalCouponAmount, 6)} BRL`);
 
   // Obter informações do cupom
-  const couponInfo = await debenture.coupons(0);
-  console.log(`  Taxa registrada: ${ethers.formatUnits(couponInfo.rate, 6)}%`);
+  const couponInfo = await debenture.couponRecords(0);
+  console.log(`  PU registrado: ${ethers.formatUnits(couponInfo.puPerUnit, 6)}`);
   console.log(`  Valor total: ${ethers.formatUnits(couponInfo.totalAmount, 6)} BRL`);
 
-  // 3.5 Calcular valores de cupom
+  // 3.5 Calcular valores de cupom manualmente
   console.log("\n💵 Calculando valores de cupom...");
-  const coupon1 = await debenture.calculateCouponValue(investor1.address, 0);
-  const coupon2 = await debenture.calculateCouponValue(investor2.address, 0);
-  const coupon3 = await debenture.calculateCouponValue(issuer.address, 0);
+  const balance1 = await debenture.balanceOf(investor1.address);
+  const balance2 = await debenture.balanceOf(investor2.address);
+  const balance3 = await debenture.balanceOf(issuer.address);
+  
+  const coupon1 = (balance1 * puPerUnit) / PRECISION_PU;
+  const coupon2 = (balance2 * puPerUnit) / PRECISION_PU;
+  const coupon3 = (balance3 * puPerUnit) / PRECISION_PU;
 
   console.log(`  • Investidor 1: ${ethers.formatUnits(coupon1, 6)} BRL`);
   console.log(`  • Investidor 2: ${ethers.formatUnits(coupon2, 6)} BRL`);
@@ -208,25 +229,30 @@ async function main() {
   console.log(`  • Total: ${ethers.formatUnits(totalCoupon, 6)} BRL`);
 
   // 3.6 Pagar cupons
-  console.log("\n💳 Pagando cupons...");
+  console.log("\n💳 Preparando pagamento de cupons...");
 
-  // Aprovar tokens de pagamento
-  await paymentToken.approve(debentureAddress, totalCoupon);
-  console.log("  Tokens de pagamento aprovados");
+  // Transfer payment tokens to debenture contract
+  await paymentToken.transfer(debentureAddress, totalCoupon);
+  console.log(`  ${ethers.formatUnits(totalCoupon, 6)} BRL transferidos para contrato da debênture`);
 
-  // Pagar cada investidor
-  await debenture.payCoupon(investor1.address, 0);
-  console.log("  ✅ Cupom pago ao Investidor 1");
+  // Claim coupon for each investor (they call it themselves)
+  await debenture.connect(investor1).claimCoupon(0);
+  console.log("  ✅ Cupom reclamado pelo Investidor 1");
 
-  await debenture.payCoupon(investor2.address, 0);
-  console.log("  ✅ Cupom pago ao Investidor 2");
+  await debenture.connect(investor2).claimCoupon(0);
+  console.log("  ✅ Cupom reclamado pelo Investidor 2");
 
-  await debenture.payCoupon(issuer.address, 0);
-  console.log("  ✅ Cupom pago ao Emissor");
+  await debenture.connect(issuer).claimCoupon(0);
+  console.log("  ✅ Cupom reclamado pelo Emissor");
 
-  // Verificar se cupom foi marcado como pago
-  const updatedCouponInfo = await debenture.coupons(0);
-  console.log(`\n  Status do cupom: ${updatedCouponInfo.paid ? "✅ Pago" : "❌ Pendente"}`);
+  // Verificar se cupom foi reclamado
+  const claimed1 = await debenture.couponClaimed(investor1.address, 0);
+  const claimed2 = await debenture.couponClaimed(investor2.address, 0);
+  const claimed3 = await debenture.couponClaimed(issuer.address, 0);
+  console.log(`\n  Status de reivindicação:`);
+  console.log(`    Investidor 1: ${claimed1 ? "✅ Reclamado" : "❌ Pendente"}`);
+  console.log(`    Investidor 2: ${claimed2 ? "✅ Reclamado" : "❌ Pendente"}`);
+  console.log(`    Emissor: ${claimed3 ? "✅ Reclamado" : "❌ Pendente"}`);
 
   // 3.7 Verificar cupons pendentes
   console.log("\n📋 Verificando cupons pendentes...");
