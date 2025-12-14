@@ -108,7 +108,7 @@ async function main() {
     percentDI: 0,
     couponFrequencyDays: 30,
     amortType: 0, // BULLET
-    isinCode: "BRDELOS202501",
+    isinCode: "BRDELOS20250",
     cetipCode: "DELOS25",
     series: "SERIE001",
     hasRepactuacao: true,
