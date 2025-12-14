@@ -95,9 +95,11 @@ async function main() {
   const now = Math.floor(Date.now() / 1000);
   const maturityDate = now + 365 * 24 * 60 * 60; // 1 year
   
-  // Generate unique ISIN code using timestamp (last 4 digits)
-  const timestampStr = now.toString().slice(-4);
-  const isinCode = `BRDELOS${timestampStr.padStart(4, '0')}`.slice(0, 12); // Ensure exactly 12 chars
+  // Generate unique ISIN code using timestamp (last 5 digits for exactly 12 chars)
+  // Format: BRDELOS (7) + 5 digits = 12 characters total
+  const timestampStr = now.toString().slice(-5);
+  const isinCode = `BRDELOS${timestampStr.padStart(5, '0')}`.slice(0, 12); // Exactly 12 chars
+  console.log(`  ISIN gerado: ${isinCode} (${isinCode.length} caracteres)`);
 
   // DebentureTerms struct parameters
   const terms = {
