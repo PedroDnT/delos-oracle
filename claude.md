@@ -130,14 +130,16 @@ A **Brazilian Macro Data Oracle Platform** providing on-chain access to BCB (Ban
 
 ### Immediate Priority (Week 1)
 
-1. **RestrictedToken.sol**
-   - ERC20 with transfer restrictions
-   - Whitelist/blacklist logic
-   - KYC compliance hooks
-   - Pause mechanism
+1. **RestrictedToken.sol** - ✅ **Implemented directly in debenture contracts**
+   - Originally planned as separate contract, but functionality integrated into BrazilianDebenture.sol
+   - ERC-1404 transfer restrictions implemented
+   - Whitelist/blacklist logic included
+   - KYC compliance hooks integrated
+   - Pause mechanism implemented
+   - Note: Empty RestrictedToken.sol file removed (not needed)
 
-2. **BrazilianDebenture.sol**
-   - Inherit RestrictedToken
+2. **BrazilianDebenture.sol** - ✅ **Complete**
+   - Implements ERC-20 + ERC-1404 directly (transfer restrictions built-in)
    - Oracle integration for rate lookups
    - Coupon calculation (IPCA+ or CDI+)
    - Payment distribution
