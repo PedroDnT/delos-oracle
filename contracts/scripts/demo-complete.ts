@@ -16,8 +16,55 @@ async function main() {
 
   const signers = await ethers.getSigners();
   const issuer = signers[0];
-  const investor1 = signers.length > 1 ? signers[1] : issuer;
-  const investor2 = signers.length > 2 ? signers[2] : issuer;
+  const provider = issuer.provider;
+  
+  // Create separate wallets for investors if not enough signers
+  // Ensure each investor has a unique address to avoid claim conflicts
+  let investor1, investor2;
+  if (signers.length > 2) {
+    investor1 = signers[1];
+    investor2 = signers[2];
+  } else if (signers.length > 1) {
+    investor1 = signers[1];
+    // Create a new wallet for investor2 to ensure different address
+    investor2 = ethers.Wallet.createRandom().connect(provider);
+  } else {
+    // Create new wallets for both investors to ensure different addresses
+    investor1 = ethers.Wallet.createRandom().connect(provider);
+    investor2 = ethers.Wallet.createRandom().connect(provider);
+  }
+  
+  // Ensure investors have different addresses from issuer
+  if (investor1.address.toLowerCase() === issuer.address.toLowerCase()) {
+    investor1 = ethers.Wallet.createRandom().connect(provider);
+  }
+  if (investor2.address.toLowerCase() === issuer.address.toLowerCase() || 
+      investor2.address.toLowerCase() === investor1.address.toLowerCase()) {
+    investor2 = ethers.Wallet.createRandom().connect(provider);
+  }
+
+  // Fund investor wallets if they don't have enough ETH for gas
+  // (Only needed for randomly created wallets, not for signers which already have ETH)
+  const minBalance = ethers.parseEther("0.01");
+  const investor1Balance = await provider.getBalance(investor1.address);
+  if (investor1Balance < minBalance) {
+    console.log(`  💰 Funding Investidor 1...`);
+    const tx1 = await issuer.sendTransaction({
+      to: investor1.address,
+      value: ethers.parseEther("0.1")
+    });
+    await tx1.wait();
+  }
+  
+  const investor2Balance = await provider.getBalance(investor2.address);
+  if (investor2Balance < minBalance) {
+    console.log(`  💰 Funding Investidor 2...`);
+    const tx2 = await issuer.sendTransaction({
+      to: investor2.address,
+      value: ethers.parseEther("0.1")
+    });
+    await tx2.wait();
+  }
 
   console.log("\n👥 Contas:");
   console.log("  Emissor:", issuer.address);
@@ -95,14 +142,16 @@ async function main() {
   const now = Math.floor(Date.now() / 1000);
   const maturityDate = now + 365 * 24 * 60 * 60; // 1 year
   
-  // Generate unique ISIN code using timestamp (last 4 digits)
-  const timestampStr = now.toString().slice(-4);
-  const isinCode = `BRDELOS${timestampStr.padStart(4, '0')}`.slice(0, 12); // Ensure exactly 12 chars
+  // Generate unique ISIN code using timestamp (last 5 digits for exactly 12 chars)
+  // Format: BRDELOS (7) + 5 digits = 12 characters total
+  const timestampStr = now.toString().slice(-5);
+  const isinCode = `BRDELOS${timestampStr.padStart(5, '0')}`.slice(0, 12); // Exactly 12 chars
+  console.log(`  ISIN gerado: ${isinCode} (${isinCode.length} caracteres)`);
 
   // DebentureTerms struct parameters
   const terms = {
     vne: ethers.parseUnits("1000", 6), // VNE: R$ 1.000
-    totalSupplyUnits: 1000n, // 1.000 units = 1M total
+    totalSupplyUnits: 1000n, // 1000 whole tokens (contract uses 0 decimals)
     issueDate: now,
     maturityDate: maturityDate,
     anniversaryDay: 15,
@@ -158,7 +207,7 @@ async function main() {
   console.log("\nℹ️  Informações da Debênture:");
   console.log(`  Nome: ${await debenture.name()}`);
   console.log(`  Símbolo: ${await debenture.symbol()}`);
-  console.log(`  Total Supply: ${ethers.formatUnits(await debenture.totalSupply(), 6)} tokens`);
+  console.log(`  Total Supply: ${ethers.formatUnits(await debenture.totalSupply(), 0)} tokens`);
   console.log(`  Emissor: ${await debenture.issuer()}`);
   const debentureTerms = await debenture.terms();
   console.log(`  Vencimento: ${new Date(Number(debentureTerms.maturityDate) * 1000).toLocaleDateString()}`);
@@ -177,16 +226,17 @@ async function main() {
 
   // 3.3 Distribuir tokens
   console.log("\n💸 Distribuindo tokens...");
-  const amount1 = ethers.parseUnits("400000", 6); // 400k
-  const amount2 = ethers.parseUnits("300000", 6); // 300k
-  // Emissor fica com 300k
+  // Total supply is 1000 whole tokens (contract uses 0 decimals), so distribute: 400 to investor1, 300 to investor2, 300 remains with issuer
+  const amount1 = 400n; // 400 whole tokens
+  const amount2 = 300n; // 300 whole tokens
+  // Emissor fica com 300 tokens
 
   await debenture.transfer(investor1.address, amount1);
   await debenture.transfer(investor2.address, amount2);
 
-  console.log(`  • Investidor 1: ${ethers.formatUnits(amount1, 6)} tokens`);
-  console.log(`  • Investidor 2: ${ethers.formatUnits(amount2, 6)} tokens`);
-  console.log(`  • Emissor: ${ethers.formatUnits(await debenture.balanceOf(issuer.address), 6)} tokens`);
+  console.log(`  • Investidor 1: ${ethers.formatUnits(amount1, 0)} tokens`);
+  console.log(`  • Investidor 2: ${ethers.formatUnits(amount2, 0)} tokens`);
+  console.log(`  • Emissor: ${ethers.formatUnits(await debenture.balanceOf(issuer.address), 0)} tokens`);
 
   // 3.4 Registrar cupom
   console.log("\n📅 Registrando primeiro cupom...");
@@ -242,8 +292,21 @@ async function main() {
   await debenture.connect(investor2).claimCoupon(0);
   console.log("  ✅ Cupom reclamado pelo Investidor 2");
 
-  await debenture.connect(issuer).claimCoupon(0);
-  console.log("  ✅ Cupom reclamado pelo Emissor");
+  // O emissor não pode reivindicar cupom se não for titular de tokens ou não elegível
+  // Portanto, só execute claimCoupon para o emissor se ele tiver saldo
+
+  // Fix: TypeScript warning (Property 'claimCoupon' does not exist on type 'BaseContract').
+  // This often occurs if the typechain bindings are missing or the contract instance is typed as generic.
+  // Quick workaround: typecast debenture as any for calls to custom methods in script context.
+
+  const issuerBalance = await debenture.balanceOf(issuer.address);
+  if (issuerBalance > 0) {
+    // @ts-expect-error
+    await (debenture as any).connect(issuer).claimCoupon(0);
+    console.log("  ✅ Cupom reclamado pelo Emissor");
+  } else {
+    console.log("  ⚠️ Emissor não possui tokens ou não elegível para cupom");
+  }
 
   // Verificar se cupom foi reclamado
   const claimed1 = await debenture.couponClaimed(investor1.address, 0);
@@ -269,13 +332,18 @@ async function main() {
 
   // 4.1 Teste de restrição de transferência (ERC-1404)
   console.log("\n🔒 Testando restrições de transferência (ERC-1404)...");
-  const [, , , nonWhitelisted] = await ethers.getSigners();
+  const allSigners = await ethers.getSigners();
+  // Use a random address that's not whitelisted for testing
+  // If we have 4+ signers, use the 4th one; otherwise use a generated address
+  const nonWhitelistedAddress = allSigners.length > 3 
+    ? allSigners[3].address 
+    : "0x1234567890123456789012345678901234567890"; // Dummy address for testing
 
   // Tentar transferir para não-whitelisted (deve falhar)
   const restrictionCode = await debenture.detectTransferRestriction(
     investor1.address,
-    nonWhitelisted.address,
-    ethers.parseUnits("100", 6)
+    nonWhitelistedAddress,
+    100n // 100 whole tokens (contract uses 0 decimals)
   );
   console.log(`  Código de restrição: ${restrictionCode}`);
   console.log(`  Mensagem: ${await debenture.messageForTransferRestriction(restrictionCode)}`);
