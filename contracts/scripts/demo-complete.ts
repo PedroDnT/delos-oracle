@@ -55,6 +55,7 @@ async function main() {
     });
     await tx1.wait();
   }
+  
   const investor2Balance = await provider.getBalance(investor2.address);
   if (investor2Balance < minBalance) {
     console.log(`  💰 Funding Investidor 2...`);
@@ -291,8 +292,21 @@ async function main() {
   await debenture.connect(investor2).claimCoupon(0);
   console.log("  ✅ Cupom reclamado pelo Investidor 2");
 
-  await debenture.connect(issuer).claimCoupon(0);
-  console.log("  ✅ Cupom reclamado pelo Emissor");
+  // O emissor não pode reivindicar cupom se não for titular de tokens ou não elegível
+  // Portanto, só execute claimCoupon para o emissor se ele tiver saldo
+
+  // Fix: TypeScript warning (Property 'claimCoupon' does not exist on type 'BaseContract').
+  // This often occurs if the typechain bindings are missing or the contract instance is typed as generic.
+  // Quick workaround: typecast debenture as any for calls to custom methods in script context.
+
+  const issuerBalance = await debenture.balanceOf(issuer.address);
+  if (issuerBalance > 0) {
+    // @ts-expect-error
+    await (debenture as any).connect(issuer).claimCoupon(0);
+    console.log("  ✅ Cupom reclamado pelo Emissor");
+  } else {
+    console.log("  ⚠️ Emissor não possui tokens ou não elegível para cupom");
+  }
 
   // Verificar se cupom foi reclamado
   const claimed1 = await debenture.couponClaimed(investor1.address, 0);
