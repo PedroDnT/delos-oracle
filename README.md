@@ -111,6 +111,73 @@ This will demonstrate:
 
 ---
 
+## 💰 Economics & Value Proposition
+
+### How DELOS Creates Value
+
+**DELOS operates as public infrastructure** for Brazilian tokenized securities, delivering value through:
+
+1. **98% Cost Reduction**
+   - Traditional smart contract deployment: ~$500 gas
+   - DELOS clone deployment: ~$10 gas
+   - Savings via EIP-1167 minimal proxy pattern
+
+2. **Automated Operations**
+   - Coupon calculations use real-time BCB rates
+   - No manual spreadsheet updates or calculation errors
+   - Scheduled oracle updates (daily/monthly)
+
+3. **Regulatory Compliance**
+   - Built-in KYC/AML via ERC-1404 transfer restrictions
+   - Whitelist/blacklist management
+   - Lock-up period enforcement
+   - Automated compliance reporting
+
+4. **Market Access**
+   - DeFi protocols gain access to Brazilian macro data
+   - 24/7 secondary market liquidity
+   - Fractional ownership (lower minimum investments)
+   - Global investor base
+
+### Economic Model
+
+| Phase | Model | Timeline |
+|-------|-------|----------|
+| **Pilot** (Current) | No fees, grant-funded | 2024-2025 |
+| **Production** | Factory fees + Oracle subscriptions | 2025+ |
+| **Mature** | Multi-revenue streams, sustainable | 2026+ |
+
+**Key Participants:**
+- **Issuers**: Pay ~$100 per debenture creation (future pricing)
+- **Investors**: Pay only gas fees (~$2-5 per transaction)
+- **DeFi Protocols**: Free oracle access (pilot), subscriptions (future)
+- **Platform**: Sustainable via fees, not rent extraction
+
+**Total Value Locked (Target):**
+- Year 1: $10M+ TVL
+- Year 2: $100M+ TVL
+- Year 3+: $1B+ TVL across Latin America
+
+### Value Flows
+
+```
+ISSUER → Factory (deployment fee) → DELOS Treasury
+   ↓
+Debenture Created (98% cheaper than traditional)
+   ↓
+INVESTORS ← Coupons (calculated via oracle) ← BCB Rates (free)
+   ↓
+Secondary Market Trading (24/7 liquidity)
+   ↓
+DeFi Protocols ← Oracle Data (enables new products)
+```
+
+**📖 For detailed economics, see:** [ECONOMICS.md](./ECONOMICS.md)
+
+**📖 For business workflows, see:** [WORKFLOWS.md](./WORKFLOWS.md)
+
+---
+
 ## 📊 Supported Rates
 
 | Rate | BCB Series | Type | Update Frequency |
@@ -251,10 +318,28 @@ npm start
 
 ## 📚 Documentation
 
+### Core Documentation
+- **[ECONOMICS.md](./ECONOMICS.md)** - 💰 **Economic model, value flows, and business logic**
+- **[WORKFLOWS.md](./WORKFLOWS.md)** - 📋 **End-to-end user journeys and workflows**
+- **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - 🚀 **Roadmap and future enhancements**
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - 🏗️ **System architecture and design**
+
+### Implementation Guides
 - **[DEMO-GUIDE.md](./DEMO-GUIDE.md)** - Complete demonstration guide (Portuguese)
-- **[CLAUDE.md](./CLAUDE.md)** - Full implementation tracking & architecture
-- **[IMPLEMENTATION-COMPLETE.md](./IMPLEMENTATION-COMPLETE.md)** - Completion status
+- **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** - Production deployment guide
 - **[scripts/README.md](./scripts/README.md)** - Deployment & interaction scripts
+
+### Reference
+- **[docs/TECHNICAL_DOCUMENTATION.md](./docs/TECHNICAL_DOCUMENTATION.md)** - Comprehensive technical reference
+- **[docs/API_REFERENCE.md](./docs/API_REFERENCE.md)** - REST API documentation
+- **[docs/SMART_CONTRACTS.md](./docs/SMART_CONTRACTS.md)** - Smart contract interfaces
+- **[docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)** - Development workflow
+- **[docs/USER_GUIDE.md](./docs/USER_GUIDE.md)** - Frontend user guide
+
+### Project Status
+- **[MVP_REVIEW_REPORT.md](./MVP_REVIEW_REPORT.md)** - 📊 **Comprehensive MVP review**
+- **[CLAUDE.md](./CLAUDE.md)** - Full implementation tracking
+- **[IMPLEMENTATION-COMPLETE.md](./IMPLEMENTATION-COMPLETE.md)** - Completion status
 
 ---
 

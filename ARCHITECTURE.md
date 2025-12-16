@@ -240,6 +240,158 @@
 
 ---
 
+## Economic Value Flows
+
+### Flow 1: Debenture Issuance
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DEBENTURE ISSUANCE FLOW                       │
+└─────────────────────────────────────────────────────────────────┘
+
+ISSUER
+  │
+  ├─► Pays gas (~$10-15)
+  │
+  ▼
+FACTORY
+  │
+  ├─► Creates minimal proxy clone (~45 bytes)
+  ├─► Mints total supply to issuer
+  │
+  └─► VALUE CREATED: 98% gas savings ($500 → $10)
+
+      Traditional deployment: ~29KB, $500 gas
+      DELOS deployment: ~45 bytes, $10 gas
+```
+
+### Flow 2: Coupon Payment Cycle
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    COUPON PAYMENT FLOW                           │
+└─────────────────────────────────────────────────────────────────┘
+
+BCB (Banco Central)
+  │
+  ├─► Publishes IPCA rate (free, monthly)
+  │
+  ▼
+ORACLE UPDATER (Backend)
+  │
+  ├─► Fetches rate via BCB API
+  ├─► Validates data
+  ├─► Pays gas (~$2) to update oracle
+  │
+  ▼
+ORACLE CONTRACT (On-Chain)
+  │
+  ├─► Stores rate with 8-decimal precision
+  ├─► Available to all debentures
+  │
+  ▼
+DEBENTURE CONTRACT
+  │
+  ├─► Queries oracle (gas ~$0.50)
+  ├─► Calculates coupon: VNA × (IPCA + Spread) × (Days/252)
+  ├─► Records coupon on-chain
+  │
+  ▼
+ISSUER
+  │
+  ├─► Approves payment token (USDC/BRZ)
+  ├─► Pays gas (~$3-5 per investor)
+  │
+  ▼
+INVESTORS
+  │
+  └─► Receive coupon payments automatically
+      OR claim individually (gas ~$2-3)
+
+VALUE CREATED:
+  • Automated calculations (no human error)
+  • Transparent rate source (BCB)
+  • Instant settlement
+  • Lower operational costs
+```
+
+### Flow 3: Secondary Market Trading
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  SECONDARY MARKET FLOW                           │
+└─────────────────────────────────────────────────────────────────┘
+
+SELLER (Token Holder)
+  │
+  ├─► Lists debenture on DEX/marketplace
+  │
+  ▼
+BUYER (Must be whitelisted!)
+  │
+  ├─► Completes KYC (off-chain)
+  ├─► Gets whitelisted by issuer
+  ├─► Executes trade on DEX
+  │
+  ▼
+DEBENTURE CONTRACT (ERC-1404 Check)
+  │
+  ├─► detectTransferRestriction()
+  ├─► Checks buyer whitelist ✅
+  ├─► Checks seller not blacklisted ✅
+  ├─► Checks lock-up expired ✅
+  │
+  └─► Transfer succeeds
+
+BUYER receives tokens + future coupons
+SELLER receives payment token
+
+VALUE CREATED:
+  • 24/7 liquidity
+  • Automated compliance
+  • Transparent pricing
+  • Lower transaction costs vs OTC
+```
+
+### Flow 4: Platform Economics
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PLATFORM VALUE CAPTURE                        │
+└─────────────────────────────────────────────────────────────────┘
+
+Current Model (Pilot):
+  • No fees collected
+  • Grant-funded / subsidized
+  • Goal: Build traction
+
+Future Model (Production):
+
+  ISSUERS → Factory Fee (~$100) → DELOS Treasury
+     │
+     └─► VALUE: 98% cheaper than alternatives
+         ($100 vs $5,000 traditional issuance)
+
+  DEFI PROTOCOLS → Oracle Subscription (~$200/mo) → DELOS Treasury
+     │
+     └─► VALUE: Access to Brazilian macro data
+         (previously unavailable on-chain)
+
+  INVESTORS → Gas Fees Only → Ethereum Network
+     │
+     └─► VALUE: Automated coupons, 24/7 liquidity
+         No platform fees beyond gas
+
+Platform Costs:
+  • Infrastructure: $200/month
+  • Gas for oracle updates: $50/month
+  • Operations: $70/month
+
+Target: $62K/year revenue, $6K/year costs (10x coverage)
+```
+
+---
+
 ## Technology Stack
 
 ```
@@ -328,6 +480,17 @@
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Related Documentation
+
+For more detailed information, see:
+
+- **[ECONOMICS.md](./ECONOMICS.md)** - Platform economics and value flows
+- **[WORKFLOWS.md](./WORKFLOWS.md)** - End-to-end user journeys
+- **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap
+- **[docs/TECHNICAL_DOCUMENTATION.md](./docs/TECHNICAL_DOCUMENTATION.md)** - Technical details
 
 ---
 

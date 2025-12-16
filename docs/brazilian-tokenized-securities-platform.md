@@ -35,10 +35,10 @@ Build foundational infrastructure for Brazilian tokenized securities by creating
 │                                                          ▼              │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                     DEBENTURE PLATFORM                           │  │
-│  │  ┌────────────────┐  ┌───────────────┐  ┌────────────────────┐   │  │
-│  │  │ DebentureFactory│──▶│BrazilianDeben-│──▶│  RestrictedToken │   │  │
-│  │  │                │  │     ture      │  │   (ERC-1404)       │   │  │
-│  │  └────────────────┘  └───────────────┘  └────────────────────┘   │  │
+│  │  ┌────────────────┐  ┌───────────────────────────────────────┐   │  │
+│  │  │ DebentureFactory│──▶│  BrazilianDebenture                  │   │  │
+│  │  │                │  │  (ERC-20 + ERC-1404 integrated)       │   │  │
+│  │  └────────────────┘  └───────────────────────────────────────┘   │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                          │              │
 │                                                          ▼              │
@@ -59,9 +59,8 @@ brazilian-oracle-platform/
 ├── contracts/                    # Smart Contracts (Solidity)
 │   ├── contracts/
 │   │   ├── BrazilianMacroOracle.sol
-│   │   ├── BrazilianDebenture.sol
-│   │   ├── DebentureFactory.sol
-│   │   └── RestrictedToken.sol
+│   │   ├── BrazilianDebenture.sol (includes ERC-1404 restrictions)
+│   │   └── DebentureFactory.sol
 │   ├── test/
 │   │   ├── BrazilianMacroOracle.test.ts
 │   │   └── BrazilianDebenture.test.ts
@@ -221,9 +220,11 @@ UPDATER_ROLE: Update values (backend service)
 | IGPM | 189 | Monthly | General market price index |
 | TR | 226 | Daily | Reference rate |
 
-### 2. RestrictedToken (ERC-1404)
+### 2. BrazilianDebenture (ERC-20 + ERC-1404)
 
-**Purpose**: Transfer-restricted token for regulated securities
+**Purpose**: Transfer-restricted debenture token for regulated securities
+
+**Note**: Originally planned as a separate RestrictedToken.sol contract, but ERC-1404 functionality is implemented directly in BrazilianDebenture.sol for better integration.
 
 ```solidity
 // Transfer Restriction Codes
