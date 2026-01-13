@@ -1,6 +1,6 @@
-# 🌟 DELOS - Brazilian Macro Oracle Platform
+# DELOS - Brazilian Macro Oracle Blueprint
 
-> AI-powered platform for on-chain Brazilian macroeconomic data and tokenized debentures
+> Explorational implementation of on-chain macroeconomic data and tokenized debentures for Brazil
 
 [![Arbitrum Sepolia](https://img.shields.io/badge/Arbitrum-Sepolia-blue)](https://sepolia.arbiscan.io/)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.28-orange)](https://soliditylang.org/)
@@ -10,15 +10,17 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
-**DELOS** is a comprehensive platform for Brazil's tokenized securities pilot program (ANBIMA), providing:
+**DELOS** is a technical blueprint exploring how ANBIMA's tokenized securities pilot could leverage blockchain infrastructure:
 
-- 🔮 **On-Chain Macro Oracle**: Real-time BCB (Banco Central do Brasil) rates on Arbitrum Sepolia
-- 💎 **Tokenized Debentures**: ERC-20 compliant debentures with IPCA/CDI indexation
-- 🏭 **Clone Factory**: Gas-efficient debenture deployment using EIP-1167 (6.7KB)
-- 🤖 **Automated Backend**: Scheduled rate updates and REST API
-- 📱 **Modern Frontend**: Next.js 14 dashboard with RainbowKit wallet connection
+- **On-Chain Macro Oracle**: BCB (Banco Central do Brasil) rates deployed to Arbitrum Sepolia testnet
+- **Tokenized Debentures**: ERC-20/ERC-1404 compliant debentures with IPCA/CDI indexation
+- **Clone Factory**: Gas-efficient deployment using EIP-1167 (6.7KB per instance)
+- **Backend Services**: Runnable Python code demonstrating automated rate updates
+- **Frontend Demo**: Next.js 14 interface for interacting with deployed contracts
+
+**Status**: Explorational blueprint with testnet deployment. Not production-ready.
 
 ---
 
@@ -111,70 +113,46 @@ This will demonstrate:
 
 ---
 
-## 💰 Economics & Value Proposition
+## What's Implemented
 
-### How DELOS Creates Value
+### Smart Contracts (Deployed to Arbitrum Sepolia)
 
-**DELOS operates as public infrastructure** for Brazilian tokenized securities, delivering value through:
+**BrazilianMacroOracle** - `0xe52d06e96A0ad3e81f23dF5464Ef059c72B3D8fe`
+- 6 Brazilian macro rates (IPCA, CDI, SELIC, PTAX, IGP-M, TR)
+- Chainlink AggregatorV3 compatible interface
+- 8-decimal precision with circuit breakers
+- Manually updated to demonstrate functionality
 
-1. **98% Cost Reduction**
-   - Traditional smart contract deployment: ~$500 gas
-   - DELOS clone deployment: ~$10 gas
-   - Savings via EIP-1167 minimal proxy pattern
+**DebentureCloneFactory** - `0x946ca8D40717D7C4bD0fCF134527b890D9b5DF6f`
+- EIP-1167 minimal proxy pattern (~6.7KB per debenture vs ~500KB traditional)
+- Registry of all created debentures
+- Deployed implementation at `0x8856dd1f536169B8A82D8DA5476F9765b768f51D`
 
-2. **Automated Operations**
-   - Coupon calculations use real-time BCB rates
-   - No manual spreadsheet updates or calculation errors
-   - Scheduled oracle updates (daily/monthly)
+**BrazilianDebentureCloneable** (Implementation)
+- ERC-20 + ERC-1404 transfer restrictions
+- 5 rate types (PRE, DI_SPREAD, DI_PERCENT, IPCA_SPREAD, IGPM_SPREAD)
+- 3 amortization schedules (BULLET, PERCENT_VNE, PERCENT_VNA)
+- Coupon calculation using oracle rates
+- KYC whitelist enforcement
 
-3. **Regulatory Compliance**
-   - Built-in KYC/AML via ERC-1404 transfer restrictions
-   - Whitelist/blacklist management
-   - Lock-up period enforcement
-   - Automated compliance reporting
+### Backend Services (Runnable Code)
 
-4. **Market Access**
-   - DeFi protocols gain access to Brazilian macro data
-   - 24/7 secondary market liquidity
-   - Fractional ownership (lower minimum investments)
-   - Global investor base
+Located in `/backend`, demonstrates:
+- **BCB Client**: Fetches rates from Banco Central API with retry logic
+- **Oracle Updater**: Web3 integration for on-chain updates
+- **Scheduler**: APScheduler jobs for daily/monthly rate updates (not deployed)
+- **REST API**: FastAPI with 10 endpoints for rate queries (not deployed)
+- **Data Store**: SQLite versioning and anomaly detection (not deployed)
 
-### Economic Model
+### Frontend (Next.js 14)
 
-| Phase | Model | Timeline |
-|-------|-------|----------|
-| **Pilot** (Current) | No fees, grant-funded | 2024-2025 |
-| **Production** | Factory fees + Oracle subscriptions | 2025+ |
-| **Mature** | Multi-revenue streams, sustainable | 2026+ |
+Located in `/frontend`, provides:
+- Oracle dashboard displaying current rates
+- Debenture issuance interface with validation
+- Portfolio management for viewing positions
+- RainbowKit wallet connection
 
-**Key Participants:**
-- **Issuers**: Pay ~$100 per debenture creation (future pricing)
-- **Investors**: Pay only gas fees (~$2-5 per transaction)
-- **DeFi Protocols**: Free oracle access (pilot), subscriptions (future)
-- **Platform**: Sustainable via fees, not rent extraction
-
-**Total Value Locked (Target):**
-- Year 1: $10M+ TVL
-- Year 2: $100M+ TVL
-- Year 3+: $1B+ TVL across Latin America
-
-### Value Flows
-
-```
-ISSUER → Factory (deployment fee) → DELOS Treasury
-   ↓
-Debenture Created (98% cheaper than traditional)
-   ↓
-INVESTORS ← Coupons (calculated via oracle) ← BCB Rates (free)
-   ↓
-Secondary Market Trading (24/7 liquidity)
-   ↓
-DeFi Protocols ← Oracle Data (enables new products)
-```
-
-**📖 For detailed economics, see:** [ECONOMICS.md](./ECONOMICS.md)
-
-**📖 For business workflows, see:** [WORKFLOWS.md](./WORKFLOWS.md)
+**Note**: Backend services are runnable locally but not deployed. Oracle updates on testnet were done manually to demonstrate the update flow.
 
 ---
 
@@ -316,30 +294,25 @@ npm start
 
 ---
 
-## 📚 Documentation
+## Documentation
 
-### Core Documentation
-- **[ECONOMICS.md](./ECONOMICS.md)** - 💰 **Economic model, value flows, and business logic**
-- **[WORKFLOWS.md](./WORKFLOWS.md)** - 📋 **End-to-end user journeys and workflows**
-- **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - 🚀 **Roadmap and future enhancements**
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - 🏗️ **System architecture and design**
+### Getting Started
+- **[DEMO-GUIDE.md](./DEMO-GUIDE.md)** - Complete demonstration walkthrough
+- **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** - How to deploy contracts to testnet
 
-### Implementation Guides
-- **[DEMO-GUIDE.md](./DEMO-GUIDE.md)** - Complete demonstration guide (Portuguese)
-- **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** - Production deployment guide
-- **[scripts/README.md](./scripts/README.md)** - Deployment & interaction scripts
+### Technical Reference
+- **[docs/TECHNICAL_DOCUMENTATION.md](./docs/TECHNICAL_DOCUMENTATION.md)** - Architecture and implementation details
+- **[docs/API_REFERENCE.md](./docs/API_REFERENCE.md)** - Backend REST API endpoints
+- **[docs/SMART_CONTRACTS.md](./docs/SMART_CONTRACTS.md)** - Contract interfaces and functions
+- **[docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)** - Development setup and workflow
 
-### Reference
-- **[docs/TECHNICAL_DOCUMENTATION.md](./docs/TECHNICAL_DOCUMENTATION.md)** - Comprehensive technical reference
-- **[docs/API_REFERENCE.md](./docs/API_REFERENCE.md)** - REST API documentation
-- **[docs/SMART_CONTRACTS.md](./docs/SMART_CONTRACTS.md)** - Smart contract interfaces
-- **[docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)** - Development workflow
-- **[docs/USER_GUIDE.md](./docs/USER_GUIDE.md)** - Frontend user guide
+### Conceptual Documents
+- **[ECONOMICS.md](./ECONOMICS.md)** - *Conceptual* economic model for tokenized debentures
+- **[WORKFLOWS.md](./WORKFLOWS.md)** - *Proposed* user workflows and journeys
+- **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Ideas for production implementation
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design decisions
 
-### Project Status
-- **[MVP_REVIEW_REPORT.md](./MVP_REVIEW_REPORT.md)** - 📊 **Comprehensive MVP review**
-- **[CLAUDE.md](./CLAUDE.md)** - Full implementation tracking
-- **[IMPLEMENTATION-COMPLETE.md](./IMPLEMENTATION-COMPLETE.md)** - Completion status
+*Note: Documents marked "conceptual" or "proposed" describe potential production implementations, not current functionality.*
 
 ---
 
@@ -368,23 +341,35 @@ pytest
 
 ---
 
-## 🔐 Security
+## Security & Limitations
 
-### Audit Status
+### Current Status
 
-- ⚠️ **Not audited** - Pilot/demo implementation
-- 🔒 Circuit breakers for oracle updates
-- ✅ ERC-1404 transfer restrictions
-- ✅ Access control (Ownable2Step)
-- ✅ Reentrancy guards
+⚠️ **This is an explorational blueprint - NOT audited and NOT production-ready.**
 
-### Known Limitations
+**Implemented Security Features:**
+- Circuit breakers for oracle rate bounds validation
+- ERC-1404 transfer restrictions with whitelist enforcement
+- Access control using OpenZeppelin's `Ownable2Step`
+- Reentrancy guards on payment functions
 
-1. Single oracle updater (first-party oracle)
-2. No multi-sig for critical operations
-3. Limited to Arbitrum Sepolia testnet
+**Known Limitations:**
+1. **Single oracle updater** - First-party oracle model (no decentralization)
+2. **No multi-sig governance** - Admin functions controlled by single EOA
+3. **Testnet only** - Deployed to Arbitrum Sepolia, not production networks
+4. **Manual oracle updates** - Backend scheduler exists but not running continuously
+5. **No formal audit** - Smart contracts have not undergone professional security review
+6. **Limited testing scope** - 94 unit tests cover core functionality but not all edge cases
 
-**Future**: Decentralized oracle network, multi-sig governance
+### Production Considerations
+
+For a production implementation, the following would be required:
+- Professional smart contract audit by reputable firm
+- Decentralized oracle network (e.g., Chainlink nodes, multiple data sources)
+- Multi-sig governance with timelock for admin operations
+- Comprehensive integration testing with real BCB data
+- Legal framework for compliance (KYC/AML, securities regulations)
+- Continuous monitoring and incident response procedures
 
 ---
 
@@ -407,46 +392,47 @@ GET  /anomalies                   - Detected anomalies
 
 ---
 
-## 🎯 Key Features
+## Technical Features
 
-### Oracle
-- ✅ 6 Brazilian macro rates on-chain
-- ✅ Chainlink AggregatorV3 compatible
-- ✅ 8-decimal precision
-- ✅ Circuit breakers & bounds validation
-- ✅ Batch updates for gas efficiency
+### Oracle Contract
+- 6 Brazilian macro rates stored on-chain (IPCA, CDI, SELIC, PTAX, IGP-M, TR)
+- Chainlink `AggregatorV3Interface` compatibility for DeFi integration
+- 8-decimal precision encoding
+- Circuit breakers with min/max bounds per rate type
+- Batch update function for gas efficiency
 
-### Debentures
-- ✅ ERC-20 + ERC-1404 (transfer restrictions)
-- ✅ 5 rate types: PRE, DI_SPREAD, DI_PERCENT, IPCA_SPREAD, IGPM_SPREAD
-- ✅ 3 amortization types: BULLET, PERCENT_VNE, PERCENT_VNA
-- ✅ Monthly/quarterly/semi-annual/annual coupons
-- ✅ Early redemption & repactuation
-- ✅ KYC whitelist
+### Debenture Contracts
+- ERC-20 standard token functionality
+- ERC-1404 transfer restrictions for regulatory compliance
+- 5 indexation types: fixed rate (PRE), CDI-based, IPCA-based, IGP-M-based
+- 3 amortization schedules: bullet, percentage of nominal value, percentage of updated value
+- Configurable coupon frequencies (monthly, quarterly, semi-annual, annual)
+- Early redemption and repactuation support
+- On-chain KYC whitelist management
 
-### Factory
-- ✅ EIP-1167 minimal proxy (~6.7KB per debenture)
-- ✅ Registry of all debentures
-- ✅ Filter by issuer
-- ✅ Gas-efficient deployment
+### Factory Pattern
+- EIP-1167 minimal proxy reduces deployment cost by ~98%
+- On-chain registry of all created debentures
+- Queryable by issuer address
+- Implementation contract upgradable via new deployments
 
-### Backend
-- ✅ Automated rate updates (APScheduler)
-- ✅ Retry logic & error handling
-- ✅ Anomaly detection
-- ✅ SQLite data versioning
-- ✅ RESTful API (FastAPI)
+### Backend (Demonstration Code)
+- Automated job scheduling with APScheduler
+- Retry logic with exponential backoff for BCB API
+- Statistical anomaly detection (value spikes, stale data)
+- SQLite data versioning for historical queries
+- RESTful API with OpenAPI/Swagger documentation
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-This is a pilot implementation for ANBIMA's tokenized securities program.
+This is an explorational blueprint demonstrating tokenized securities infrastructure for Brazil.
 
-For improvements or issues:
-1. Open an issue on GitHub
-2. Submit a pull request
-3. Contact the development team
+Contributions welcome:
+1. Open an issue for bugs or suggestions
+2. Submit PRs for improvements
+3. Fork for your own experiments
 
 ---
 
@@ -456,24 +442,24 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- **ANBIMA** - Tokenized securities pilot program
-- **Banco Central do Brasil (BCB)** - Macroeconomic data API
-- **Chainlink** - Oracle standard (AggregatorV3Interface)
-- **OpenZeppelin** - Smart contract libraries
-- **Arbitrum** - L2 scaling solution
+**Inspiration & Standards:**
+- ANBIMA's tokenized securities pilot program provided use case context
+- Banco Central do Brasil (BCB) provides public macroeconomic data API
+- Chainlink's AggregatorV3Interface used for oracle compatibility
+- OpenZeppelin libraries for secure contract patterns
+- Arbitrum for L2 testnet infrastructure
+
+**Built as a technical exploration, not an official implementation.**
 
 ---
 
-## 📞 Support
+## Support
 
-- **Documentation**: Full docs in [CLAUDE.md](./CLAUDE.md)
 - **Demo Guide**: Step-by-step in [DEMO-GUIDE.md](./DEMO-GUIDE.md)
 - **GitHub Issues**: https://github.com/PedroDnT/delos-oracle/issues
 
 ---
 
-<p align="center">
-  <strong>Built with ❤️ for Brazil's tokenized securities future</strong>
-</p>
+**DELOS** - Exploring blockchain infrastructure for Brazilian tokenized securities

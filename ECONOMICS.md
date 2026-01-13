@@ -1,8 +1,10 @@
 # DELOS Platform Economics
 
+> **⚠️ CONCEPTUAL DOCUMENT**: This document describes a potential economic model for a production implementation of DELOS. The current implementation is an explorational blueprint on testnet. Revenue models, fee structures, and TVL targets are hypothetical.
+
 **Version:** 1.0.0
 **Last Updated:** December 15, 2024
-**Purpose:** Comprehensive explanation of the DELOS platform economic model, value flows, and business logic
+**Purpose:** Exploration of potential economic model, value flows, and business logic for tokenized debentures
 
 ---
 

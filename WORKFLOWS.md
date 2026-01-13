@@ -1,8 +1,10 @@
 # DELOS Platform - Business Workflows & User Journeys
 
+> **⚠️ PROPOSED WORKFLOWS**: This document describes hypothetical user journeys for a production implementation. The current implementation is an explorational blueprint demonstrating technical capabilities on testnet.
+
 **Version:** 1.0.0
 **Last Updated:** December 15, 2024
-**Purpose:** Detailed end-to-end workflows for all platform participants
+**Purpose:** Proposed end-to-end workflows for potential platform participants
 
 ---
 

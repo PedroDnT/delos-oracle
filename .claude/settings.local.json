@@ -27,9 +27,15 @@
       "Bash(npx hardhat verify:*)",
       "Bash(npm run build:*)",
       "Bash(git push:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Skill(superpowers:brainstorming)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "jarvis-mcp",
+    "supabase"
+  ]
 }
