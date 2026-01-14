@@ -56,14 +56,36 @@ This will demonstrate:
 
 ## 🌐 Live Deployment
 
-**Frontend (Vercel)**: [https://frontend-deloslabs.vercel.app](https://frontend-deloslabs.vercel.app)
+### Frontend (Production)
 
-- Next.js 14 static site hosted on Vercel
-- RainbowKit wallet integration
-- Connected to Arbitrum Sepolia testnet
-- Real-time oracle data dashboard
+**URL**: [https://frontend-deloslabs.vercel.app](https://frontend-deloslabs.vercel.app)
 
-**Backend API Documentation**: See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for Railway backend setup
+Deployed on Vercel with:
+- ✅ Next.js 14 with App Router
+- ✅ RainbowKit wallet integration (MetaMask, WalletConnect, Coinbase Wallet)
+- ✅ Connected to Arbitrum Sepolia testnet
+- ✅ Real-time oracle data dashboard
+- ✅ Interactive debenture issuance and portfolio management
+
+**Features**:
+- 📊 View 6 real-time Brazilian macro rates (IPCA, CDI, SELIC, PTAX, IGPM, TR)
+- 🪙 Issue tokenized debentures with IPCA or CDI indexation
+- 💼 Portfolio tracking for all issued debentures
+- 🔗 Direct blockchain explorer links for transparency
+
+### Backend Setup
+
+For automated rate updates via cron jobs, see the comprehensive guide:
+**[Backend Deployment Documentation →](./docs/DEPLOYMENT.md)**
+
+The backend provides:
+- 🤖 Automated rate updates (19:00 BRT daily, 10th monthly)
+- 📡 REST API for rate queries and manual sync
+- 🗄️ Historical rate storage with SQLite
+- 🔔 Anomaly detection for data quality
+- 📊 Scheduler monitoring and health checks
+
+**Deployment platforms**: Railway, Render, or any Python-compatible PaaS
 
 ---
 
