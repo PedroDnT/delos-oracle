@@ -1,7 +1,7 @@
-// Import ABIs from artifacts
-import BrazilianMacroOracleABI from '../../contracts/artifacts/contracts/BrazilianMacroOracle.sol/BrazilianMacroOracle.json'
-import DebentureCloneFactoryABI from '../../contracts/artifacts/contracts/DebentureCloneFactory.sol/DebentureCloneFactory.json'
-import BrazilianDebentureCloneableABI from '../../contracts/artifacts/contracts/BrazilianDebentureCloneable.sol/BrazilianDebentureCloneable.json'
+// Import ABIs from local directory (copied from contracts artifacts for Vercel deployment)
+import BrazilianMacroOracleABI from './abis/BrazilianMacroOracle.json'
+import DebentureCloneFactoryABI from './abis/DebentureCloneFactory.json'
+import BrazilianDebentureCloneableABI from './abis/BrazilianDebentureCloneable.json'
 
 export const CONTRACTS = {
   oracle: {
