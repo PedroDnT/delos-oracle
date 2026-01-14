@@ -34,7 +34,10 @@
       "mcp__vercel__list_teams",
       "mcp__vercel__list_projects",
       "mcp__vercel__deploy_to_vercel",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npx vercel deploy:*)",
+      "mcp__vercel__get_deployment",
+      "mcp__vercel__web_fetch_vercel_url"
     ],
     "deny": [],
     "ask": []

@@ -54,6 +54,19 @@ This will demonstrate:
 
 ---
 
+## 🌐 Live Deployment
+
+**Frontend (Vercel)**: [https://frontend-deloslabs.vercel.app](https://frontend-deloslabs.vercel.app)
+
+- Next.js 14 static site hosted on Vercel
+- RainbowKit wallet integration
+- Connected to Arbitrum Sepolia testnet
+- Real-time oracle data dashboard
+
+**Backend API Documentation**: See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for Railway backend setup
+
+---
+
 ## 📦 Deployed Contracts
 
 ### Arbitrum Sepolia Testnet
