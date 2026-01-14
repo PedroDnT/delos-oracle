@@ -28,7 +28,13 @@
       "Bash(npm run build:*)",
       "Bash(git push:*)",
       "Bash(git rm:*)",
-      "Skill(superpowers:brainstorming)"
+      "Skill(superpowers:brainstorming)",
+      "Bash(find:*)",
+      "Bash(mcp add:*)",
+      "mcp__vercel__list_teams",
+      "mcp__vercel__list_projects",
+      "mcp__vercel__deploy_to_vercel",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []

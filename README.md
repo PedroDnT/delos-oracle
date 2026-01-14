@@ -425,6 +425,51 @@ GET  /anomalies                   - Detected anomalies
 
 ---
 
+## 🚀 Deployment
+
+### Production Deployment Guide
+
+Deploy the complete DELOS system to production:
+
+**Backend (Railway)**: Python FastAPI + APScheduler for automated rate updates
+- Always-on cron jobs (19:00 BRT daily, 10th monthly)
+- Persistent SQLite database
+- ~$5/month cost
+
+**Frontend (Vercel)**: Next.js 14 static site
+- Free tier unlimited
+- Automatic HTTPS
+- Global CDN
+
+**Deployment Time**: ~30-45 minutes
+
+For complete step-by-step instructions, see: [DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+
+**Quick Deploy:**
+```bash
+# Backend to Railway
+cd backend
+npm install -g @railway/cli
+railway init
+railway up
+
+# Frontend to Vercel
+cd frontend
+npm install -g vercel
+vercel --prod
+```
+
+**Deployment files created:**
+- `backend/Procfile` - Railway process definition
+- `backend/railway.json` - Health checks and restart policies
+- `backend/.railwayignore` - Deployment exclusions
+- `frontend/.env.production` - Production environment variables
+- `frontend/vercel.json` - Vercel configuration
+
+**Monitoring**: Built-in health checks at `/health` endpoint. Recommended: UptimeRobot for uptime monitoring.
+
+---
+
 ## Contributing
 
 This is an explorational blueprint demonstrating tokenized securities infrastructure for Brazil.
