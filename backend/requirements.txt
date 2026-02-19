@@ -64,6 +64,3 @@ aiosqlite==0.20.0
 
 # Configuration
 python-dotenv==1.2.1
-
-# Legacy (can be removed if not used elsewhere)
-schedule==1.2.2

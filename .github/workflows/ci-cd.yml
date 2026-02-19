@@ -128,7 +128,6 @@ jobs:
 
       - name: Type check with mypy
         run: mypy . --ignore-missing-imports
-        continue-on-error: true
 
       - name: Run tests with pytest
         run: |
@@ -252,7 +251,7 @@ jobs:
           sleep 5
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-          ORACLE_ADDRESS: ${{ env.DEPLOYED_ORACLE_ADDRESS }}
+          ORACLE_ADDRESS: ${{ secrets.ORACLE_ADDRESS }}
 
       - name: Run E2E tests
         working-directory: frontend
@@ -341,8 +340,8 @@ jobs:
       - name: Verify Contracts on Etherscan
         working-directory: contracts
         run: |
-          npx hardhat verify --network arbitrumSepolia ${{ env.DEPLOYED_ORACLE_ADDRESS }}
-          npx hardhat verify --network arbitrumSepolia ${{ env.DEPLOYED_FACTORY_ADDRESS }}
+          npx hardhat verify --network arbitrumSepolia ${{ secrets.ORACLE_ADDRESS }}
+          npx hardhat verify --network arbitrumSepolia ${{ secrets.FACTORY_ADDRESS }}
         env:
           ARBISCAN_API_KEY: ${{ secrets.ARBISCAN_API_KEY }}
         continue-on-error: true
@@ -354,8 +353,8 @@ jobs:
           image: gcr.io/${{ secrets.GCP_PROJECT }}/delos-backend:${{ github.sha }}
           region: us-central1
           env_vars: |
-            ORACLE_ADDRESS=${{ env.DEPLOYED_ORACLE_ADDRESS }}
-            FACTORY_ADDRESS=${{ env.DEPLOYED_FACTORY_ADDRESS }}
+            ORACLE_ADDRESS=${{ secrets.ORACLE_ADDRESS }}
+            FACTORY_ADDRESS=${{ secrets.FACTORY_ADDRESS }}
             ARBITRUM_RPC=${{ secrets.ARBITRUM_SEPOLIA_RPC }}
 
       - name: Deploy Frontend to Vercel
@@ -371,7 +370,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          text: 'Testnet deployment completed: Oracle=${{ env.DEPLOYED_ORACLE_ADDRESS }}, Factory=${{ env.DEPLOYED_FACTORY_ADDRESS }}'
+          text: 'Testnet deployment completed: Oracle=${{ secrets.ORACLE_ADDRESS }}, Factory=${{ secrets.FACTORY_ADDRESS }}'
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
         if: always()
 
@@ -406,7 +405,7 @@ jobs:
           assert status['is_active'], 'Oracle is not active'
           "
         env:
-          ORACLE_ADDRESS: ${{ env.DEPLOYED_ORACLE_ADDRESS }}
+          ORACLE_ADDRESS: ${{ secrets.ORACLE_ADDRESS }}
           ARBITRUM_SEPOLIA_RPC: ${{ secrets.ARBITRUM_SEPOLIA_RPC }}
           PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
 
