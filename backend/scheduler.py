@@ -386,10 +386,6 @@ class RateScheduler:
         # Future: Add Slack, email, PagerDuty integration
         logger.critical(f"ALERT: {message}")
 
-        if self.settings.slack_webhook_url:
-            # TODO: Implement Slack notification
-            pass
-
     def _on_job_executed(self, event: JobExecutionEvent) -> None:
         """Handle successful job execution."""
         logger.info(
