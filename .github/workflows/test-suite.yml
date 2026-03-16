@@ -217,7 +217,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-test-results-${{ matrix.test-type }}
           path: |
@@ -413,7 +413,7 @@ jobs:
           k6 run performance-test.js --out json=results.json
 
       - name: Upload performance results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-results
           path: results.json
