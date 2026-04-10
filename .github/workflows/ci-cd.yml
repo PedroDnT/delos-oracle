@@ -8,6 +8,10 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
   NODE_VERSION: '18'
   PYTHON_VERSION: '3.11'
@@ -71,8 +75,8 @@ jobs:
           sarif: results.sarif
 
       - name: Upload Slither results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository
         with:
           sarif_file: results.sarif
 
@@ -278,7 +282,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
         with:
           sarif_file: 'trivy-results.sarif'
 
