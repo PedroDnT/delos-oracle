@@ -1,0 +1,23 @@
+{
+  "name": "delos-oracle-solana",
+  "version": "0.1.0",
+  "description": "BCB macroeconomic data oracle for Solana",
+  "private": true,
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test",
+    "deploy": "anchor deploy --provider.cluster devnet",
+    "publish": "cd solana-crank && npx ts-node src/publish.ts",
+    "publish:dry": "cd solana-crank && DRY_RUN=true npx ts-node src/publish.ts"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "^0.30.1",
+    "@solana/web3.js": "^1.98.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.0",
+    "chai": "^4.3.0",
+    "mocha": "^10.0.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.0.0"
+  }
+}

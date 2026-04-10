@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "project": "delos-oracle-solana",
+  "workflow": {
+    "auto_commit": true,
+    "require_tests": true,
+    "parallel_execution": true,
+    "yolo_mode": true
+  },
+  "profile": "balanced",
+  "created": "2026-04-10"
+}

@@ -1,0 +1,29 @@
+{
+  "name": "Delos Oracle — Solana Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "coral-xyz.anchor",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "rust-analyzer.cargo.target": null,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "cd /workspace && yarn install 2>/dev/null || true",
+  "remoteEnv": {
+    "ANCHOR_PROVIDER_URL": "https://api.devnet.solana.com",
+    "ANCHOR_WALLET": "/root/.config/solana/id.json"
+  }
+}
