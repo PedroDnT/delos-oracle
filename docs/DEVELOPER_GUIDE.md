@@ -540,6 +540,7 @@ const chainId = useChainId();
 The GitHub Actions workflow at `.github/workflows/ci-cd.yml` includes SARIF uploads for security scans.
 
 - SARIF uploads use `github/codeql-action/upload-sarif@v3`.
+- Uploaded SARIF findings are available in GitHub under **Security → Code scanning alerts** for this repository.
 - Workflow permissions include:
     - `contents: read`
     - `security-events: write`
