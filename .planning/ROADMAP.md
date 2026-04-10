@@ -24,6 +24,13 @@
 - Program ID in README
 - No authority bypass possible
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — anchor build: compile program and generate IDL + TypeScript types
+- [ ] 01-02-PLAN.md — anchor test: run 7 localnet tests, verify authority enforcement
+- [ ] 01-03-PLAN.md — anchor deploy to devnet + README update with Program ID and explorer link
+
 ---
 
 ### Phase 2: TypeScript Publisher
