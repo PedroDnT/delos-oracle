@@ -535,6 +535,23 @@ const chainId = useChainId();
 - [ ] API endpoints accessible
 - [ ] Frontend builds without errors
 
+### CI Security Scanning Notes
+
+The GitHub Actions workflow at `.github/workflows/ci-cd.yml` includes SARIF uploads for security scans.
+
+- SARIF uploads use `github/codeql-action/upload-sarif@v3`.
+- Workflow permissions include:
+    - `contents: read`
+    - `security-events: write`
+- SARIF upload steps are intentionally skipped for pull requests from forks to avoid:
+    - `Resource not accessible by integration`
+
+The upload condition used in CI is:
+
+`github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository`
+
+This keeps uploads enabled for pushes/releases and same-repository PRs, while safely skipping fork PRs.
+
 ### Smart Contracts
 
 - [ ] Compile fresh: `npx hardhat compile`
