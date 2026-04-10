@@ -3,30 +3,13 @@ src = "contracts"
 test = "test"
 out = "out"
 libs = ["node_modules", "lib"]
+solc_version = "0.8.20"
 
-# This prevents Foundry from compiling dependencies'’t be retrieved). Create it:
+# Match Hardhat optimizer and viaIR settings
+optimizer = true
+optimizer_runs = 200
+via_ir = true
 
-```toml
-# contracts/foundry.toml
-[profile.default]
-src = "contracts"
-out = "out"
-libs = ["node_modules", "lib"]
-
-# Make Foundry resolve imports like: @openzeppelin/contracts/...
-remappings = [
-  "@openzeppelin/=node_modules/@openzeppelin/"
-]
-
-# Avoid compiling Solidity files inside node_modules (like eth-gas-reporter's Truffle mocks)
-ignored_error_codes = []
-# If your Foundry version supports own test/mocks (like eth-gas-reporter/mock)
-ignored_paths = [
-  "node_modules",
-  "node_modules/**"
-]
-
-# Ensure remappings exist for OZ imports
 remappings = [
   "@openzeppelin/=node_modules/@openzeppelin/"
 ]
