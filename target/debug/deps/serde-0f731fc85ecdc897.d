@@ -1,0 +1,14 @@
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/serde-0f731fc85ecdc897.d: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/build/serde-46cd876f2618b9a2/out/private.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/libserde-0f731fc85ecdc897.rlib: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/build/serde-46cd876f2618b9a2/out/private.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/libserde-0f731fc85ecdc897.rmeta: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/build/serde-46cd876f2618b9a2/out/private.rs
+
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/build/serde-46cd876f2618b9a2/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/build/serde-46cd876f2618b9a2/out

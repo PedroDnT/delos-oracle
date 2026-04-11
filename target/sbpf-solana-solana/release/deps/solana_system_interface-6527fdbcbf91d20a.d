@@ -1,0 +1,9 @@
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/sbpf-solana-solana/release/deps/solana_system_interface-6527fdbcbf91d20a.d: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/error.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/instruction.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/sbpf-solana-solana/release/deps/libsolana_system_interface-6527fdbcbf91d20a.rlib: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/error.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/instruction.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/sbpf-solana-solana/release/deps/libsolana_system_interface-6527fdbcbf91d20a.rmeta: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/error.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/instruction.rs
+
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/lib.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/error.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-system-interface-2.0.0/src/instruction.rs:

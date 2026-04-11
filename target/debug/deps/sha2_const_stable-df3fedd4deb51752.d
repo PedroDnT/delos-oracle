@@ -1,0 +1,10 @@
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/sha2_const_stable-df3fedd4deb51752.d: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/constants.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/sha.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/util.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/libsha2_const_stable-df3fedd4deb51752.rlib: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/constants.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/sha.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/util.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/libsha2_const_stable-df3fedd4deb51752.rmeta: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/constants.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/sha.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/util.rs
+
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/lib.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/constants.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/sha.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sha2-const-stable-0.1.0/src/util.rs:

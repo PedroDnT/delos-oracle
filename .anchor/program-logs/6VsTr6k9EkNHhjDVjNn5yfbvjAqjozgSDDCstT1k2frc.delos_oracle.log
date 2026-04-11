@@ -1,0 +1,112 @@
+Transaction executed in slot 5:
+  Signature: 8mWZS3c2q19Ve9g7BjrmmRygnJPKS6CSoQ8Ld5wAWfFszfTucAGBgt59UBJkdDuyrMtZAu47p5jALjZzp38pSKm
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: Initialize
+    Program 11111111111111111111111111111111 invoke [2]
+    Program 11111111111111111111111111111111 success
+    Program log: Delos Oracle initialized. Authority: 5M7bK5M5qVNmjks45BbDXRXEWMpWtQLUX6ktot8NTC65
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 13103 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 5:
+  Signature: 4YRt1NyZ6k1h3aYaVYTx4ND7BCS6UbQWNbzpmzoZ5fFFxT5ZiBEkUbkotxkNqJ6PzWUyyU5n3q5LBoWQNUgJHLhQ
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: UpdateRate
+    Program log: Rate 0 updated: 1050000000 @ 20260410
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9302 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 6:
+  Signature: 4YRt1NyZ6k1h3aYaVYTx4ND7BCS6UbQWNbzpmzoZ5fFFxT5ZiBEkUbkotxkNqJ6PzWUyyU5n3q5LBoWQNUgJHLhQ
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: UpdateRate
+    Program log: Rate 0 updated: 1050000000 @ 20260410
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9302 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 6:
+  Signature: 3DzoQt6Jk8xZRwneV9dW7mVngigFXnfT6bCWiTWvPcpQtDpVJwpzafcDwAVmuAP7YgTm4Gi41ovjLBQ3DLVdYaTk
+  Status: Error processing Instruction 0: custom program error: 0x1771
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: UpdateRate
+    Program log: AnchorError thrown in programs/delos-oracle/src/lib.rs:41. Error Code: InvalidRateType. Error Number: 6001. Error Message: Invalid rate type. Use 0=SELIC, 1=CDI, 2=PTAX, 3=TR.
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 8207 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc failed: custom program error: 0x1771
+
+Transaction executed in slot 6:
+  Signature: 4RhEqXdwDbiFX6WDodfioJfUupmFVQfhDFrwgaYPNMaX49ghAKijnBTJfhaMkCJQt2BB5pCH28AbuUQBiepJgfQk
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: BatchUpdateRates
+    Program log: Batch update: SELIC=1050000000 CDI=1045000000 PTAX=520000000 TR=100000000
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9696 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 7:
+  Signature: 4RhEqXdwDbiFX6WDodfioJfUupmFVQfhDFrwgaYPNMaX49ghAKijnBTJfhaMkCJQt2BB5pCH28AbuUQBiepJgfQk
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: BatchUpdateRates
+    Program log: Batch update: SELIC=1050000000 CDI=1045000000 PTAX=520000000 TR=100000000
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9696 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 7:
+  Signature: 27phas7JoQUWh7fbohoar5K5j268McLw18BAGhGKubT9KCGHKfk5pj2iJb4KnZLvFNe3CeiENySTnYTYdXhgzVri
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: UpdateFocus
+    Program log: Focus 2026 updated: IPCA=450000000 SELIC_EOY=1025000000 USD/BRL=520000000 GDP=200000000
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9754 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 8:
+  Signature: 27phas7JoQUWh7fbohoar5K5j268McLw18BAGhGKubT9KCGHKfk5pj2iJb4KnZLvFNe3CeiENySTnYTYdXhgzVri
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: UpdateFocus
+    Program log: Focus 2026 updated: IPCA=450000000 SELIC_EOY=1025000000 USD/BRL=520000000 GDP=200000000
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9754 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 10:
+  Signature: 4vQG4sQfL6mmhEsrfmMnTczfaBMXjqujRTqqtUGZY4CuNUn6PjDzD2JQzRnxoKy5ktZMqKHqCEjG8SBUy8LGV8zv
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: TransferAuthority
+    Program log: Authority transferred to FtCHCqyhfdTVDAEs7HJgGUfuG6huD9Ekhp6ZBUnxXFBG
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9993 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 10:
+  Signature: 3vsHgJH8t36X3pCo1CrTLinJvRiiMyWBkbnXcMKaTJfmb4xJFFHHDYjQksahP2gtQrgTzhhJvW9AzAGDsojxTN4f
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: TransferAuthority
+    Program log: Authority transferred to 5M7bK5M5qVNmjks45BbDXRXEWMpWtQLUX6ktot8NTC65
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9994 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+
+Transaction executed in slot 11:
+  Signature: 3vsHgJH8t36X3pCo1CrTLinJvRiiMyWBkbnXcMKaTJfmb4xJFFHHDYjQksahP2gtQrgTzhhJvW9AzAGDsojxTN4f
+  Status: Ok
+  Log Messages:
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc invoke [1]
+    Program log: Instruction: TransferAuthority
+    Program log: Authority transferred to 5M7bK5M5qVNmjks45BbDXRXEWMpWtQLUX6ktot8NTC65
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc consumed 9994 of 200000 compute units
+    Program 6VsTr6k9EkNHhjDVjNn5yfbvjAqjozgSDDCstT1k2frc success
+

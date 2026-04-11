@@ -1,0 +1,9 @@
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/solana_loader_v3_interface-2b50d452ed543fe8.d: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/instruction.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/state.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/libsolana_loader_v3_interface-2b50d452ed543fe8.rlib: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/instruction.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/state.rs
+
+/Users/pedrotodescan/Documents/Dev/delos-oracle/target/debug/deps/libsolana_loader_v3_interface-2b50d452ed543fe8.rmeta: /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/lib.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/instruction.rs /Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/state.rs
+
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/lib.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/instruction.rs:
+/Users/pedrotodescan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v3-interface-6.1.1/src/state.rs:
