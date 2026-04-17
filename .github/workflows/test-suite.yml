@@ -130,20 +130,20 @@ jobs:
         run: |
           cat > tests/unit/test_bcb_client.py << 'EOF'
           import pytest
-          from unittest.mock import patch, MagicMock
+          from unittest.mock import patch, AsyncMock
           import sys
           import os
           sys.path.insert(0, os.path.abspath('.'))
-          from bcb_client import BCBClient
+          from bcb_client import BCBClient, BCBClientError, RateType
 
           @pytest.fixture
           def bcb_client():
               return BCBClient()
 
           def test_validate_response_structure(bcb_client):
-              valid_response = {
-                  'valor': [{'valor': '4.50'}]
-              }
+              valid_response = [
+                  {'data': '01/01/2024', 'valor': '4.50'}
+              ]
               assert bcb_client.validate_response_structure(valid_response) is True
 
               invalid_response = {'invalid': 'data'}
@@ -151,14 +151,16 @@ jobs:
 
           @pytest.mark.asyncio
           async def test_fetch_rate_with_retry(bcb_client):
-              with patch('bcb_client.httpx.AsyncClient.get') as mock_get:
-                  mock_get.return_value.json.return_value = {
-                      'valor': [{'valor': '4.50'}]
-                  }
-                  mock_get.return_value.raise_for_status = MagicMock()
+              expected_result = object()
+              with patch.object(bcb_client, 'fetch_latest', new_callable=AsyncMock) as mock_fetch_latest:
+                  with patch('bcb_client.asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
+                      mock_fetch_latest.side_effect = [BCBClientError('temporary'), expected_result]
 
-                  result = await bcb_client.fetch_with_retry(433, '01/01/2024', '31/01/2024')
-                  assert result['valor'][0]['valor'] == '4.50'
+                      result = await bcb_client.fetch_with_retry(RateType.IPCA, max_retries=1, base_delay=0)
+
+                      assert result is expected_result
+                      assert mock_fetch_latest.await_count == 2
+                      mock_sleep.assert_awaited_once()
           EOF
 
           pytest tests/unit/ -v --cov=. --cov-report=term-missing
