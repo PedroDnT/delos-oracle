@@ -40,7 +40,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Hardhat 3 requires Node >= 22.13.0
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: contracts/package-lock.json
 
@@ -60,7 +61,6 @@ jobs:
         run: npx hardhat test --coverage
 
       - name: Upload coverage
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: contract-coverage
