@@ -1,3 +1,9 @@
+# Installed dependencies.
+# NOTE: the root node_modules/ is already tracked in this repo; git keeps
+# tracking what it already tracks, so this only stops *new* installs (e.g.
+# contracts/, frontend/) from being staged by accident.
+node_modules/
+
 # Build output / generated caches
 contracts/artifacts/artifacts.d.ts
 contracts/artifacts/build-info/
