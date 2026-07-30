@@ -1,14 +1,18 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BrazilianMacroOracle } from "../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { network } from "hardhat";
+import type { BrazilianMacroOracle } from "../typechain-types";
+import type {
+  HardhatEthers,
+  HardhatEthersSigner,
+} from "@nomicfoundation/hardhat-ethers/types";
 
 describe("BrazilianMacroOracle", function () {
+  let ethers: HardhatEthers;
   let oracle: BrazilianMacroOracle;
-  let owner: SignerWithAddress;
-  let updater: SignerWithAddress;
-  let admin: SignerWithAddress;
-  let user: SignerWithAddress;
+  let owner: HardhatEthersSigner;
+  let updater: HardhatEthersSigner;
+  let admin: HardhatEthersSigner;
+  let user: HardhatEthersSigner;
 
   // Chainlink standard: 8 decimals
   const PRECISION = 10n ** 8n;
@@ -22,9 +26,13 @@ describe("BrazilianMacroOracle", function () {
   const SELIC_13_75 = toAnswer(13.75);   // 1375000000
   const PTAX_5_81 = toAnswer(5.81);      // 581000000
 
+  before(async function () {
+    ({ ethers } = await network.getOrCreate());
+  });
+
   beforeEach(async function () {
     [owner, updater, admin, user] = await ethers.getSigners();
-    
+
     const Oracle = await ethers.getContractFactory("BrazilianMacroOracle");
     oracle = await Oracle.deploy() as unknown as BrazilianMacroOracle;
     await oracle.waitForDeployment();
@@ -95,7 +103,7 @@ describe("BrazilianMacroOracle", function () {
     it("Should reject updates from non-UPDATER accounts", async function () {
       await expect(
         oracle.connect(user).updateRate("IPCA", IPCA_4_50, 20241115, "BCB-433")
-      ).to.be.reverted;
+      ).to.revert(ethers);
     });
 
     it("Should support batch updates for multiple rates", async function () {

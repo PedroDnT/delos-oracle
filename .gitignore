@@ -1,0 +1,28 @@
+# Build output / generated caches
+contracts/artifacts/artifacts.d.ts
+contracts/artifacts/build-info/
+contracts/artifacts/**/artifacts.d.ts
+contracts/cache/compile-cache.json
+contracts/coverage/data/
+contracts/coverage/html/
+contracts/out/
+
+frontend/.next/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/tsconfig.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+venv/
+.venv/
+
+# Local environment
+.env
+.env.local

@@ -44,7 +44,7 @@ export function RateDashboard() {
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
         <p className="text-yellow-700 font-semibold">No rates available</p>
         <p className="text-yellow-600 text-sm mt-2">
-          The oracle hasn't been populated with data yet
+          The oracle hasn&apos;t been populated with data yet
         </p>
       </div>
     )

@@ -1,18 +1,23 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BrazilianDebenture, BrazilianMacroOracle } from "../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
+import { network } from "hardhat";
+import type { BrazilianDebenture, BrazilianMacroOracle } from "../typechain-types";
+import type {
+  HardhatEthers,
+  HardhatEthersSigner,
+} from "@nomicfoundation/hardhat-ethers/types";
+import type { NetworkHelpers } from "@nomicfoundation/hardhat-network-helpers/types";
 
 describe("BrazilianDebenture", function () {
+  let ethers: HardhatEthers;
+  let time: NetworkHelpers["time"];
   let debenture: BrazilianDebenture;
   let oracle: BrazilianMacroOracle;
   let paymentToken: any; // MockERC20
-  let issuer: SignerWithAddress;
-  let trustee: SignerWithAddress;
-  let investor1: SignerWithAddress;
-  let investor2: SignerWithAddress;
-  let nonWhitelisted: SignerWithAddress;
+  let issuer: HardhatEthersSigner;
+  let trustee: HardhatEthersSigner;
+  let investor1: HardhatEthersSigner;
+  let investor2: HardhatEthersSigner;
+  let nonWhitelisted: HardhatEthersSigner;
 
   // Precision constants
   const PRECISION_PU = 10n ** 6n;      // 6 decimals for PU
@@ -82,6 +87,12 @@ describe("BrazilianDebenture", function () {
     await token.waitForDeployment();
     return token;
   }
+
+  before(async function () {
+    const connection = await network.getOrCreate();
+    ethers = connection.ethers;
+    time = connection.networkHelpers.time;
+  });
 
   beforeEach(async function () {
     [issuer, trustee, investor1, investor2, nonWhitelisted] = await ethers.getSigners();
@@ -326,7 +337,7 @@ describe("BrazilianDebenture", function () {
     it("Should reject non-admin whitelist operations", async function () {
       await expect(
         debenture.connect(investor1).addToWhitelist(investor2.address)
-      ).to.be.reverted;
+      ).to.revert(ethers);
     });
   });
 
@@ -599,7 +610,7 @@ describe("BrazilianDebenture", function () {
       it("Should reject default declaration from non-trustee", async function () {
         await expect(
           debenture.connect(issuer).declareDefault()
-        ).to.be.reverted;
+        ).to.revert(ethers);
       });
     });
 

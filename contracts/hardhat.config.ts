@@ -1,13 +1,23 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-ethers";
-import "@nomicfoundation/hardhat-network-helpers";
-import "@nomicfoundation/hardhat-verify";
-import "@nomicfoundation/hardhat-ethers-chai-matchers";
+import hardhatMocha from "@nomicfoundation/hardhat-mocha";
+import hardhatEthers from "@nomicfoundation/hardhat-ethers";
+import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
+import hardhatEthersChaiMatchers from "@nomicfoundation/hardhat-ethers-chai-matchers";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
+  // Hardhat 3 requires plugins to be registered explicitly; a bare `import`
+  // no longer registers them.
+  plugins: [
+    hardhatMocha,
+    hardhatEthers,
+    hardhatNetworkHelpers,
+    hardhatVerify,
+    hardhatEthersChaiMatchers,
+  ],
   solidity: {
     version: "0.8.20",
     settings: {
@@ -19,6 +29,11 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    // In-process EDR network used by the test suite
+    hardhat: {
+      type: "edr-simulated",
+      chainType: "l1",
+    },
     // Arbitrum Sepolia (testnet)
     arbitrumSepolia: {
       type: "http",
@@ -34,11 +49,13 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY || "",
-  },
-  sourcify: {
-    enabled: false,
+  verify: {
+    etherscan: {
+      apiKey: process.env.ETHERSCAN_API_KEY || "",
+    },
+    blockscout: {
+      enabled: false,
+    },
   },
 };
 
