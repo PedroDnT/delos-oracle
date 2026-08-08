@@ -14,6 +14,7 @@ contracts/coverage/html/
 contracts/out/
 
 frontend/.next/
+frontend/out/
 frontend/coverage/
 frontend/playwright-report/
 frontend/test-results/
