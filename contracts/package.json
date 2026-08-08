@@ -9,18 +9,22 @@
   "scripts": {
     "test": "npx hardhat test"
   },
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "@nomicfoundation/hardhat-ethers": "^4.0.7",
     "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.4",
+    "@nomicfoundation/hardhat-mocha": "^3.0.21",
     "@nomicfoundation/hardhat-network-helpers": "^3.0.4",
     "@nomicfoundation/hardhat-verify": "^3.0.13",
     "chai": "^6.2.2",
     "dotenv": "^17.2.3",
-    "hardhat": "^3.3.0"
+    "hardhat": "^3.3.0",
+    "mocha": "^11.7.6"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0"
