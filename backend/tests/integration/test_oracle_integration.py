@@ -34,6 +34,7 @@ def _http_response(payload, status_code: int = 200) -> MagicMock:
 # DATA STORE
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestDataStore:
     async def test_initialize_creates_schema(self, data_store):
@@ -53,7 +54,9 @@ class TestDataStore:
         assert latest.real_world_date == cdi_rate_data.real_world_date
         assert latest.source == "BCB-12"
 
-    async def test_history_is_ordered_most_recent_first(self, data_store, cdi_rate_data):
+    async def test_history_is_ordered_most_recent_first(
+        self, data_store, cdi_rate_data
+    ):
         await data_store.initialize()
 
         for date_int, answer in [
@@ -72,7 +75,9 @@ class TestDataStore:
     ):
         await data_store.initialize()
         await data_store.store_rate(cdi_rate_data)
-        await data_store.store_rate(replace_rate(cdi_rate_data, 20241116, 1_100_000_000))
+        await data_store.store_rate(
+            replace_rate(cdi_rate_data, 20241116, 1_100_000_000)
+        )
 
         history = await data_store.get_rate_history("CDI", days=365)
         assert len(history) == 1
@@ -108,6 +113,7 @@ class TestDataStore:
 # =============================================================================
 # ANOMALY DETECTION
 # =============================================================================
+
 
 class TestAnomalyDetector:
     def test_flags_value_far_from_the_mean(self):
@@ -182,6 +188,7 @@ class TestAnomalyDetector:
 # BCB -> DATA STORE FLOW
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestBcbToDataStoreFlow:
     async def test_fetched_rate_is_persisted(self, data_store, bcb_payload):
@@ -189,7 +196,11 @@ class TestBcbToDataStoreFlow:
 
         client = BCBClient()
         with patch.object(
-            client, "_get_client", return_value=MagicMock(get=AsyncMock(return_value=_http_response(bcb_payload)))
+            client,
+            "_get_client",
+            return_value=MagicMock(
+                get=AsyncMock(return_value=_http_response(bcb_payload))
+            ),
         ):
             rate = await client.fetch_latest(RateType.CDI)
 
@@ -199,7 +210,9 @@ class TestBcbToDataStoreFlow:
         assert stored.answer == rate.answer == 1_090_000_000
         assert stored.real_world_date == 20241116
 
-    async def test_anomaly_detected_from_stored_history(self, data_store, cdi_rate_data):
+    async def test_anomaly_detected_from_stored_history(
+        self, data_store, cdi_rate_data
+    ):
         await data_store.initialize()
 
         base_date = 20241101
@@ -239,6 +252,7 @@ class TestBcbToDataStoreFlow:
 # =============================================================================
 # HELPERS
 # =============================================================================
+
 
 def replace_rate(rate, real_world_date: int, answer: int):
     """Copy a RateData with a new date/answer (dataclasses.replace equivalent)."""
