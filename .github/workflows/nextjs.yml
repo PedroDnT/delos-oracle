@@ -51,10 +51,11 @@ jobs:
           # Project sites are served from /<repo>, so the build needs the base
           # path baked in. configure-pages resolves it for us.
           NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          # Points the dashboard at a reachable backend. Without this repository
-          # variable the build falls back to http://localhost:8000, and the
-          # deployed page renders its "Failed to load rates" state.
-          NEXT_PUBLIC_BACKEND_API_URL: ${{ vars.BACKEND_API_URL }}
+          # The dashboard reads rates directly from Supabase. Both values are
+          # public by design (the anon key ships in every client bundle and is
+          # limited by RLS to read-only), so they live in repository variables.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
