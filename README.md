@@ -50,7 +50,7 @@ This will demonstrate:
 4. ✅ Coupon calculation and payment
 5. ✅ Transfer restrictions (ERC-1404)
 
-**Full documentation**: [DEMO-GUIDE.md](./DEMO-GUIDE.md)
+**Full documentation**: [DEMO-GUIDE.md](./docs/DEMO-GUIDE.md)
 
 ---
 
@@ -332,8 +332,8 @@ npm start
 ## Documentation
 
 ### Getting Started
-- **[DEMO-GUIDE.md](./DEMO-GUIDE.md)** - Complete demonstration walkthrough
-- **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** - How to deploy contracts to testnet
+- **[DEMO-GUIDE.md](./docs/DEMO-GUIDE.md)** - Complete demonstration walkthrough
+- **[DEPLOYMENT-GUIDE.md](./docs/DEPLOYMENT-GUIDE.md)** - How to deploy contracts to testnet
 
 ### Technical Reference
 - **[docs/TECHNICAL_DOCUMENTATION.md](./docs/TECHNICAL_DOCUMENTATION.md)** - Architecture and implementation details
@@ -342,10 +342,8 @@ npm start
 - **[docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)** - Development setup and workflow
 
 ### Conceptual Documents
-- **[ECONOMICS.md](./ECONOMICS.md)** - *Conceptual* economic model for tokenized debentures
-- **[WORKFLOWS.md](./WORKFLOWS.md)** - *Proposed* user workflows and journeys
-- **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Ideas for production implementation
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design decisions
+- **[WORKFLOWS.md](./docs/WORKFLOWS.md)** - *Proposed* user workflows and journeys
+- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System design decisions
 
 *Note: Documents marked "conceptual" or "proposed" describe potential production implementations, not current functionality.*
 
@@ -537,7 +535,7 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ## Support
 
-- **Demo Guide**: Step-by-step in [DEMO-GUIDE.md](./DEMO-GUIDE.md)
+- **Demo Guide**: Step-by-step in [DEMO-GUIDE.md](./docs/DEMO-GUIDE.md)
 - **GitHub Issues**: https://github.com/PedroDnT/delos-oracle/issues
 
 ---

@@ -17,9 +17,11 @@ logger = logging.getLogger(__name__)
 # DATA CLASSES
 # =============================================================================
 
+
 @dataclass
 class StoredRate:
     """Rate data stored in the database."""
+
     id: int
     rate_type: str
     answer: int  # Chainlink scaled (10^8)
@@ -33,6 +35,7 @@ class StoredRate:
 @dataclass
 class OracleUpdate:
     """Oracle update transaction record."""
+
     id: int
     rate_type: str
     tx_hash: Optional[str]
@@ -46,6 +49,7 @@ class OracleUpdate:
 @dataclass
 class Anomaly:
     """Detected anomaly record."""
+
     id: int
     rate_type: str
     detected_at: datetime
@@ -60,6 +64,7 @@ class Anomaly:
 @dataclass
 class SchedulerRun:
     """Scheduler job execution record."""
+
     id: int
     job_id: str
     started_at: datetime
@@ -140,6 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_scheduler_runs_started ON scheduler_runs(started_
 # DATA STORE
 # =============================================================================
 
+
 class DataStore:
     """
     Async SQLite data store for rate history and logging.
@@ -198,21 +204,23 @@ class DataStore:
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    rate_data.rate_type.value if hasattr(rate_data.rate_type, 'value') else rate_data.rate_type,
+                    (
+                        rate_data.rate_type.value
+                        if hasattr(rate_data.rate_type, "value")
+                        else rate_data.rate_type
+                    ),
                     rate_data.answer,
                     rate_data.raw_value,
                     rate_data.real_world_date,
                     rate_data.timestamp.isoformat(),
                     rate_data.source,
-                )
+                ),
             )
             await db.commit()
             return cursor.lastrowid
 
     async def get_rate_history(
-        self,
-        rate_type: str,
-        days: int = 30
+        self, rate_type: str, days: int = 30
     ) -> List[StoredRate]:
         """
         Get historical rates for anomaly detection.
@@ -234,7 +242,7 @@ class DataStore:
                 WHERE rate_type = ? AND fetch_timestamp >= ?
                 ORDER BY real_world_date DESC
                 """,
-                (rate_type, cutoff_date.isoformat())
+                (rate_type, cutoff_date.isoformat()),
             )
             rows = await cursor.fetchall()
 
@@ -246,7 +254,11 @@ class DataStore:
                     raw_value=row["raw_value"],
                     real_world_date=row["real_world_date"],
                     bcb_timestamp=datetime.fromisoformat(row["bcb_timestamp"]),
-                    fetch_timestamp=datetime.fromisoformat(row["fetch_timestamp"]) if row["fetch_timestamp"] else datetime.now(),
+                    fetch_timestamp=(
+                        datetime.fromisoformat(row["fetch_timestamp"])
+                        if row["fetch_timestamp"]
+                        else datetime.now()
+                    ),
                     source=row["source"],
                 )
                 for row in rows
@@ -268,7 +280,7 @@ class DataStore:
         block_number: Optional[int],
         gas_used: Optional[int],
         status: str,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> int:
         """
         Log an oracle update attempt.
@@ -291,19 +303,17 @@ class DataStore:
                 (rate_type, tx_hash, block_number, gas_used, status, error_message)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (rate_type, tx_hash, block_number, gas_used, status, error_message)
+                (rate_type, tx_hash, block_number, gas_used, status, error_message),
             )
             await db.commit()
             logger.info(
                 f"Logged oracle update: {rate_type} - {status}",
-                extra={"rate_type": rate_type, "tx_hash": tx_hash, "status": status}
+                extra={"rate_type": rate_type, "tx_hash": tx_hash, "status": status},
             )
             return cursor.lastrowid
 
     async def get_oracle_updates(
-        self,
-        rate_type: Optional[str] = None,
-        limit: int = 100
+        self, rate_type: Optional[str] = None, limit: int = 100
     ) -> List[OracleUpdate]:
         """Get recent oracle update records."""
         async with aiosqlite.connect(self.db_path) as db:
@@ -317,7 +327,7 @@ class DataStore:
                     ORDER BY timestamp DESC
                     LIMIT ?
                     """,
-                    (rate_type, limit)
+                    (rate_type, limit),
                 )
             else:
                 cursor = await db.execute(
@@ -326,7 +336,7 @@ class DataStore:
                     ORDER BY timestamp DESC
                     LIMIT ?
                     """,
-                    (limit,)
+                    (limit,),
                 )
 
             rows = await cursor.fetchall()
@@ -339,7 +349,11 @@ class DataStore:
                     gas_used=row["gas_used"],
                     status=row["status"],
                     error_message=row["error_message"],
-                    timestamp=datetime.fromisoformat(row["timestamp"]) if row["timestamp"] else datetime.now(),
+                    timestamp=(
+                        datetime.fromisoformat(row["timestamp"])
+                        if row["timestamp"]
+                        else datetime.now()
+                    ),
                 )
                 for row in rows
             ]
@@ -356,7 +370,7 @@ class DataStore:
         expected_low: float,
         expected_high: float,
         std_devs: float,
-        message: str
+        message: str,
     ) -> int:
         """
         Log a detected anomaly.
@@ -381,21 +395,29 @@ class DataStore:
                  expected_range_high, std_devs, message)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (rate_type, anomaly_type, current_value, expected_low,
-                 expected_high, std_devs, message)
+                (
+                    rate_type,
+                    anomaly_type,
+                    current_value,
+                    expected_low,
+                    expected_high,
+                    std_devs,
+                    message,
+                ),
             )
             await db.commit()
             logger.warning(
                 f"Anomaly logged: {rate_type} - {anomaly_type}: {message}",
-                extra={"rate_type": rate_type, "anomaly_type": anomaly_type, "z_score": std_devs}
+                extra={
+                    "rate_type": rate_type,
+                    "anomaly_type": anomaly_type,
+                    "z_score": std_devs,
+                },
             )
             return cursor.lastrowid
 
     async def get_anomalies(
-        self,
-        rate_type: Optional[str] = None,
-        days: int = 7,
-        limit: int = 100
+        self, rate_type: Optional[str] = None, days: int = 7, limit: int = 100
     ) -> List[Anomaly]:
         """Get recent anomaly records."""
         cutoff = datetime.now() - timedelta(days=days)
@@ -411,7 +433,7 @@ class DataStore:
                     ORDER BY detected_at DESC
                     LIMIT ?
                     """,
-                    (rate_type, cutoff.isoformat(), limit)
+                    (rate_type, cutoff.isoformat(), limit),
                 )
             else:
                 cursor = await db.execute(
@@ -421,7 +443,7 @@ class DataStore:
                     ORDER BY detected_at DESC
                     LIMIT ?
                     """,
-                    (cutoff.isoformat(), limit)
+                    (cutoff.isoformat(), limit),
                 )
 
             rows = await cursor.fetchall()
@@ -429,7 +451,11 @@ class DataStore:
                 Anomaly(
                     id=row["id"],
                     rate_type=row["rate_type"],
-                    detected_at=datetime.fromisoformat(row["detected_at"]) if row["detected_at"] else datetime.now(),
+                    detected_at=(
+                        datetime.fromisoformat(row["detected_at"])
+                        if row["detected_at"]
+                        else datetime.now()
+                    ),
                     anomaly_type=row["anomaly_type"],
                     current_value=row["current_value"],
                     expected_range_low=row["expected_range_low"],
@@ -445,10 +471,7 @@ class DataStore:
     # =========================================================================
 
     async def log_scheduler_run(
-        self,
-        job_id: str,
-        started_at: datetime,
-        status: str = "running"
+        self, job_id: str, started_at: datetime, status: str = "running"
     ) -> int:
         """
         Log the start of a scheduler job.
@@ -467,7 +490,7 @@ class DataStore:
                 INSERT INTO scheduler_runs (job_id, started_at, status)
                 VALUES (?, ?, ?)
                 """,
-                (job_id, started_at.isoformat(), status)
+                (job_id, started_at.isoformat(), status),
             )
             await db.commit()
             return cursor.lastrowid
@@ -479,7 +502,7 @@ class DataStore:
         status: str,
         rates_processed: int = 0,
         rates_updated: int = 0,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> None:
         """
         Update a scheduler run record.
@@ -504,8 +527,14 @@ class DataStore:
                 ORDER BY started_at DESC
                 LIMIT 1
                 """,
-                (ended_at.isoformat(), status, rates_processed,
-                 rates_updated, error_message, job_id)
+                (
+                    ended_at.isoformat(),
+                    status,
+                    rates_processed,
+                    rates_updated,
+                    error_message,
+                    job_id,
+                ),
             )
             await db.commit()
 
@@ -519,7 +548,7 @@ class DataStore:
                 ORDER BY started_at DESC
                 LIMIT ?
                 """,
-                (limit,)
+                (limit,),
             )
             rows = await cursor.fetchall()
 
@@ -528,7 +557,11 @@ class DataStore:
                     id=row["id"],
                     job_id=row["job_id"],
                     started_at=datetime.fromisoformat(row["started_at"]),
-                    ended_at=datetime.fromisoformat(row["ended_at"]) if row["ended_at"] else None,
+                    ended_at=(
+                        datetime.fromisoformat(row["ended_at"])
+                        if row["ended_at"]
+                        else None
+                    ),
                     status=row["status"],
                     rates_processed=row["rates_processed"],
                     rates_updated=row["rates_updated"],

@@ -1,10 +1,21 @@
+# Secrets — never commit. Copy the .example files and fill them in locally.
+.env
+.env.local
+.env.production
+*.env
+!*.env.example
+
 # Installed dependencies.
 # NOTE: the root node_modules/ is already tracked in this repo; git keeps
 # tracking what it already tracks, so this only stops *new* installs (e.g.
 # contracts/, frontend/) from being staged by accident.
 node_modules/
 
-# Build output / generated caches
+# Rust / Anchor build output
+target/
+.anchor/
+
+# Hardhat build output / generated caches
 contracts/artifacts/artifacts.d.ts
 contracts/artifacts/build-info/
 contracts/artifacts/**/artifacts.d.ts
@@ -13,6 +24,7 @@ contracts/coverage/data/
 contracts/coverage/html/
 contracts/out/
 
+# Next.js build output
 frontend/.next/
 frontend/out/
 frontend/coverage/
@@ -30,6 +42,6 @@ htmlcov/
 venv/
 .venv/
 
-# Local environment
-.env
-.env.local
+# Agent / editor scratch
+.claude/
+.planning/

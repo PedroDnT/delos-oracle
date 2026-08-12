@@ -31,7 +31,7 @@ from apscheduler.events import (
     EVENT_JOB_ERROR,
     EVENT_JOB_EXECUTED,
     EVENT_JOB_MISSED,
-    JobExecutionEvent
+    JobExecutionEvent,
 )
 
 from bcb_client import BCBClient, RateType, RateData, BCBClientError, RATE_CONFIGS
@@ -104,31 +104,28 @@ class RateScheduler:
                 hour=self.settings.daily_update_hour,
                 minute=self.settings.daily_update_minute,
                 day_of_week="mon-fri",
-                timezone=BRT
+                timezone=BRT,
             ),
             id="daily_rates",
             name="Daily Rate Update (CDI, SELIC, PTAX, TR)",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
-            misfire_grace_time=3600  # 1 hour grace period
+            misfire_grace_time=3600,  # 1 hour grace period
         )
 
         # Monthly rates: 10th of month at 10:00 BRT
         self.scheduler.add_job(
             self.update_monthly_rates,
             CronTrigger(
-                day=self.settings.monthly_update_day,
-                hour=10,
-                minute=0,
-                timezone=BRT
+                day=self.settings.monthly_update_day, hour=10, minute=0, timezone=BRT
             ),
             id="monthly_rates",
             name="Monthly Rate Update (IPCA, IGPM)",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
-            misfire_grace_time=86400  # 24 hour grace period
+            misfire_grace_time=86400,  # 24 hour grace period
         )
 
         # Backup job: Check for stale data every 4 hours
@@ -138,7 +135,7 @@ class RateScheduler:
             id="stale_check",
             name="Stale Data Check",
             replace_existing=True,
-            max_instances=1
+            max_instances=1,
         )
 
         logger.info("Scheduler jobs configured")
@@ -156,9 +153,7 @@ class RateScheduler:
         return await self._update_rates(list(RateType), "all")
 
     async def _update_rates(
-        self,
-        rate_types: List[RateType],
-        update_type: str
+        self, rate_types: List[RateType], update_type: str
     ) -> Dict[str, Any]:
         """
         Core update logic with retry and anomaly detection.
@@ -183,14 +178,15 @@ class RateScheduler:
 
         logger.info(
             f"Starting {update_type} rate update",
-            extra={"rate_types": [r.value for r in rate_types], "job_id": f"{update_type}_rates"}
+            extra={
+                "rate_types": [r.value for r in rate_types],
+                "job_id": f"{update_type}_rates",
+            },
         )
 
         # Log job start
         await self.data_store.log_scheduler_run(
-            job_id=f"{update_type}_rates",
-            started_at=job_start,
-            status="running"
+            job_id=f"{update_type}_rates", started_at=job_start, status="running"
         )
 
         try:
@@ -208,7 +204,9 @@ class RateScheduler:
                         )
                         fetched_rates[rate_type] = rate_data
                     except BCBClientError as e:
-                        logger.error(f"Failed to fetch {rate_type.value} after retries: {e}")
+                        logger.error(
+                            f"Failed to fetch {rate_type.value} after retries: {e}"
+                        )
                         results["rates_failed"] += 1
 
             if not fetched_rates:
@@ -218,7 +216,7 @@ class RateScheduler:
                     job_id=f"{update_type}_rates",
                     ended_at=datetime.now(),
                     status="failed",
-                    error_message=error_msg
+                    error_message=error_msg,
                 )
                 return results
 
@@ -226,16 +224,14 @@ class RateScheduler:
             for rate_type, rate_data in fetched_rates.items():
                 # Get historical data for anomaly detection
                 history = await self.data_store.get_rate_history(
-                    rate_type.value,
-                    days=self.settings.anomaly_lookback_days
+                    rate_type.value, days=self.settings.anomaly_lookback_days
                 )
                 historical_values = [r.raw_value for r in history]
 
                 # Run anomaly checks
                 if historical_values:
                     anomaly_result = self.anomaly_detector.detect_value_anomaly(
-                        rate_data.raw_value,
-                        historical_values
+                        rate_data.raw_value, historical_values
                     )
 
                     if anomaly_result.is_anomaly:
@@ -245,17 +241,25 @@ class RateScheduler:
                             extra={
                                 "rate_type": rate_type.value,
                                 "anomaly_type": anomaly_result.anomaly_type,
-                                "z_score": anomaly_result.z_score
-                            }
+                                "z_score": anomaly_result.z_score,
+                            },
                         )
                         await self.data_store.log_anomaly(
                             rate_type=rate_type.value,
                             anomaly_type=anomaly_result.anomaly_type,
                             current_value=rate_data.raw_value,
-                            expected_low=anomaly_result.mean - (anomaly_result.std_dev * self.settings.anomaly_std_threshold),
-                            expected_high=anomaly_result.mean + (anomaly_result.std_dev * self.settings.anomaly_std_threshold),
+                            expected_low=anomaly_result.mean
+                            - (
+                                anomaly_result.std_dev
+                                * self.settings.anomaly_std_threshold
+                            ),
+                            expected_high=anomaly_result.mean
+                            + (
+                                anomaly_result.std_dev
+                                * self.settings.anomaly_std_threshold
+                            ),
                             std_devs=anomaly_result.z_score,
-                            message=anomaly_result.message
+                            message=anomaly_result.message,
                         )
                         # Note: We log but DON'T block the update
 
@@ -283,7 +287,7 @@ class RateScheduler:
                         block_number=oracle_result.block,
                         gas_used=oracle_result.gas_used,
                         status="success" if oracle_result.success else "failed",
-                        error_message=oracle_result.error
+                        error_message=oracle_result.error,
                     )
 
             except Exception as e:
@@ -298,7 +302,7 @@ class RateScheduler:
                         block_number=None,
                         gas_used=None,
                         status="failed",
-                        error_message=str(e)
+                        error_message=str(e),
                     )
 
             # Log job completion
@@ -309,7 +313,7 @@ class RateScheduler:
                 status="completed" if results["success"] else "failed",
                 rates_processed=len(rate_types),
                 rates_updated=results["rates_updated"],
-                error_message=results["error"]
+                error_message=results["error"],
             )
 
             logger.info(
@@ -321,8 +325,8 @@ class RateScheduler:
                 extra={
                     "tx_hash": results["tx_hash"],
                     "duration_ms": duration_ms,
-                    "job_id": f"{update_type}_rates"
-                }
+                    "job_id": f"{update_type}_rates",
+                },
             )
 
         except Exception as e:
@@ -332,7 +336,7 @@ class RateScheduler:
                 job_id=f"{update_type}_rates",
                 ended_at=datetime.now(),
                 status="failed",
-                error_message=str(e)
+                error_message=str(e),
             )
             await self._send_alert(f"{update_type.title()} rate update failed: {e}")
 
@@ -357,8 +361,7 @@ class RateScheduler:
 
                 last_update = datetime.fromtimestamp(rate_data["timestamp"])
                 anomaly = self.anomaly_detector.detect_stale_data(
-                    last_update,
-                    config.heartbeat_seconds
+                    last_update, config.heartbeat_seconds
                 )
 
                 stale_rates[rate_type_str] = anomaly.is_anomaly
@@ -366,9 +369,14 @@ class RateScheduler:
                 if anomaly.is_anomaly:
                     logger.warning(
                         f"Stale data detected: {rate_type_str} - {anomaly.message}",
-                        extra={"rate_type": rate_type_str, "anomaly_type": "stale_data"}
+                        extra={
+                            "rate_type": rate_type_str,
+                            "anomaly_type": "stale_data",
+                        },
                     )
-                    await self._send_alert(f"Stale rate: {rate_type_str} - {anomaly.message}")
+                    await self._send_alert(
+                        f"Stale rate: {rate_type_str} - {anomaly.message}"
+                    )
 
         except Exception as e:
             logger.error(f"Stale rate check failed: {e}")
@@ -389,8 +397,7 @@ class RateScheduler:
     def _on_job_executed(self, event: JobExecutionEvent) -> None:
         """Handle successful job execution."""
         logger.info(
-            f"Job {event.job_id} executed successfully",
-            extra={"job_id": event.job_id}
+            f"Job {event.job_id} executed successfully", extra={"job_id": event.job_id}
         )
 
     def _on_job_error(self, event: JobExecutionEvent) -> None:
@@ -398,14 +405,13 @@ class RateScheduler:
         logger.error(
             f"Job {event.job_id} failed: {event.exception}",
             extra={"job_id": event.job_id},
-            exc_info=event.exception
+            exc_info=event.exception,
         )
 
     def _on_job_missed(self, event: JobExecutionEvent) -> None:
         """Handle missed job execution."""
         logger.warning(
-            f"Job {event.job_id} missed scheduled run",
-            extra={"job_id": event.job_id}
+            f"Job {event.job_id} missed scheduled run", extra={"job_id": event.job_id}
         )
 
     async def start(self) -> None:
@@ -428,8 +434,10 @@ class RateScheduler:
             {
                 "id": job.id,
                 "name": job.name,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-                "trigger": str(job.trigger)
+                "next_run": (
+                    job.next_run_time.isoformat() if job.next_run_time else None
+                ),
+                "trigger": str(job.trigger),
             }
             for job in self.scheduler.get_jobs()
         ]
@@ -441,20 +449,12 @@ async def main():
 
     parser = argparse.ArgumentParser(description="DELOS Rate Scheduler")
     parser.add_argument(
-        "command",
-        choices=["start", "run-once", "status"],
-        help="Command to run"
+        "command", choices=["start", "run-once", "status"], help="Command to run"
     )
     parser.add_argument(
-        "--rates",
-        type=str,
-        help="Comma-separated rate types (for run-once)"
+        "--rates", type=str, help="Comma-separated rate types (for run-once)"
     )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output in JSON format"
-    )
+    parser.add_argument("--json", action="store_true", help="Output in JSON format")
     args = parser.parse_args()
 
     # Setup logging
@@ -480,9 +480,13 @@ async def main():
         rate_types = None
         if args.rates:
             try:
-                rate_types = [RateType(r.strip().upper()) for r in args.rates.split(",")]
+                rate_types = [
+                    RateType(r.strip().upper()) for r in args.rates.split(",")
+                ]
             except ValueError as e:
-                print(f"Error: Invalid rate type. Valid types: {[r.value for r in RateType]}")
+                print(
+                    f"Error: Invalid rate type. Valid types: {[r.value for r in RateType]}"
+                )
                 return
 
         if rate_types:
@@ -492,6 +496,7 @@ async def main():
 
         if args.json:
             import json
+
             print(json.dumps(results, indent=2))
         else:
             print(f"\nUpdate Results:")
@@ -500,9 +505,9 @@ async def main():
             print(f"  Rates Skipped: {results['rates_skipped']}")
             print(f"  Rates Failed: {results['rates_failed']}")
             print(f"  Anomalies: {results['anomalies_detected']}")
-            if results['tx_hash']:
+            if results["tx_hash"]:
                 print(f"  TX Hash: {results['tx_hash']}")
-            if results['error']:
+            if results["error"]:
                 print(f"  Error: {results['error']}")
 
     elif args.command == "status":
@@ -511,6 +516,7 @@ async def main():
 
         if args.json:
             import json
+
             print(json.dumps(jobs, indent=2))
         else:
             print("\nScheduled Jobs:")

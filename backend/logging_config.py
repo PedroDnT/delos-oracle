@@ -64,10 +64,10 @@ class ConsoleFormatter(logging.Formatter):
     """
 
     COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
@@ -102,9 +102,7 @@ class ConsoleFormatter(logging.Formatter):
 
 
 def setup_logging(
-    log_level: str = "INFO",
-    json_format: bool = True,
-    log_file: Optional[str] = None
+    log_level: str = "INFO", json_format: bool = True, log_file: Optional[str] = None
 ) -> None:
     """
     Configure logging for the application.

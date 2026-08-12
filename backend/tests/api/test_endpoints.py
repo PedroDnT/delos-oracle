@@ -44,15 +44,18 @@ def _bcb_client_stub(rate_data) -> MagicMock:
 # HEALTH
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestHealthEndpoint:
     async def test_reports_healthy_when_all_dependencies_are_up(
         self, client, cdi_rate_data
     ):
         updater = MagicMock(check_connection=AsyncMock(return_value=True))
-        with patch.object(api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)), \
-             patch.object(api, "OracleUpdater", return_value=updater), \
-             patch.object(api.scheduler, "is_running", True):
+        with patch.object(
+            api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)
+        ), patch.object(api, "OracleUpdater", return_value=updater), patch.object(
+            api.scheduler, "is_running", True
+        ):
             response = await client.get("/health")
 
         assert response.status_code == 200
@@ -64,9 +67,12 @@ class TestHealthEndpoint:
     async def test_reports_degraded_when_oracle_is_unreachable(
         self, client, cdi_rate_data
     ):
-        updater = MagicMock(check_connection=AsyncMock(side_effect=RuntimeError("no rpc")))
-        with patch.object(api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)), \
-             patch.object(api, "OracleUpdater", return_value=updater):
+        updater = MagicMock(
+            check_connection=AsyncMock(side_effect=RuntimeError("no rpc"))
+        )
+        with patch.object(
+            api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)
+        ), patch.object(api, "OracleUpdater", return_value=updater):
             response = await client.get("/health")
 
         assert response.status_code == 200
@@ -79,8 +85,9 @@ class TestHealthEndpoint:
         bcb.health_check = AsyncMock(return_value=False)
 
         updater = MagicMock(check_connection=AsyncMock(return_value=False))
-        with patch.object(api, "BCBClient", return_value=bcb), \
-             patch.object(api, "OracleUpdater", return_value=updater):
+        with patch.object(api, "BCBClient", return_value=bcb), patch.object(
+            api, "OracleUpdater", return_value=updater
+        ):
             response = await client.get("/health")
 
         assert response.status_code == 200
@@ -91,8 +98,9 @@ class TestHealthEndpoint:
 
     async def test_response_matches_documented_schema(self, client, cdi_rate_data):
         updater = MagicMock(check_connection=AsyncMock(return_value=True))
-        with patch.object(api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)), \
-             patch.object(api, "OracleUpdater", return_value=updater):
+        with patch.object(
+            api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)
+        ), patch.object(api, "OracleUpdater", return_value=updater):
             response = await client.get("/health")
 
         body = response.json()
@@ -108,6 +116,7 @@ class TestHealthEndpoint:
 # =============================================================================
 # RATES
 # =============================================================================
+
 
 @pytest.mark.asyncio
 class TestRateEndpoints:
@@ -166,10 +175,13 @@ class TestRateEndpoints:
 # DIRECT BCB PASSTHROUGH
 # =============================================================================
 
+
 @pytest.mark.asyncio
 class TestBcbEndpoint:
     async def test_returns_latest_bcb_value(self, client, cdi_rate_data):
-        with patch.object(api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)):
+        with patch.object(
+            api, "BCBClient", return_value=_bcb_client_stub(cdi_rate_data)
+        ):
             response = await client.get("/bcb/latest/CDI")
 
         assert response.status_code == 200
@@ -199,6 +211,7 @@ class TestBcbEndpoint:
 # =============================================================================
 # STATS & SCHEMA
 # =============================================================================
+
 
 @pytest.mark.asyncio
 class TestStatsAndSchema:

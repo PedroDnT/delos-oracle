@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AnomalyResult:
     """Result of an anomaly detection check."""
+
     is_anomaly: bool
     anomaly_type: Optional[str]  # 'value_spike', 'stale_data', 'velocity'
     current_value: float
@@ -84,9 +85,7 @@ class AnomalyDetector:
         self.min_history_size = min_history_size
 
     def detect_value_anomaly(
-        self,
-        current_value: float,
-        historical_values: List[float]
+        self, current_value: float, historical_values: List[float]
     ) -> AnomalyResult:
         """
         Detect if current value is statistically anomalous.
@@ -110,7 +109,7 @@ class AnomalyDetector:
                 mean=current_value,
                 std_dev=0,
                 z_score=0,
-                message=f"Insufficient history ({len(historical_values)} < {self.min_history_size})"
+                message=f"Insufficient history ({len(historical_values)} < {self.min_history_size})",
             )
 
         # Calculate statistics
@@ -121,15 +120,15 @@ class AnomalyDetector:
         if std_dev == 0:
             # Any different value is technically an anomaly
             is_anomaly = current_value != mean
-            z_score = float('inf') if is_anomaly else 0
+            z_score = float("inf") if is_anomaly else 0
             return AnomalyResult(
                 is_anomaly=is_anomaly,
                 anomaly_type="value_spike" if is_anomaly else None,
                 current_value=current_value,
                 mean=mean,
                 std_dev=0,
-                z_score=z_score if z_score != float('inf') else 999,
-                message=f"Value {current_value} differs from constant {mean}"
+                z_score=z_score if z_score != float("inf") else 999,
+                message=f"Value {current_value} differs from constant {mean}",
             )
 
         # Calculate z-score
@@ -149,13 +148,11 @@ class AnomalyDetector:
             message=(
                 f"Value {current_value:.4f} is {z_score:.2f} std devs {direction} "
                 f"mean {mean:.4f} (threshold: {self.std_threshold})"
-            )
+            ),
         )
 
     def detect_stale_data(
-        self,
-        last_update: datetime,
-        heartbeat_seconds: int
+        self, last_update: datetime, heartbeat_seconds: int
     ) -> AnomalyResult:
         """
         Detect if data is stale (exceeds heartbeat threshold).
@@ -172,7 +169,9 @@ class AnomalyDetector:
         is_stale = age_seconds > heartbeat_seconds
 
         # Calculate how many heartbeats overdue
-        heartbeat_ratio = age_seconds / heartbeat_seconds if heartbeat_seconds > 0 else 0
+        heartbeat_ratio = (
+            age_seconds / heartbeat_seconds if heartbeat_seconds > 0 else 0
+        )
 
         return AnomalyResult(
             is_anomaly=is_stale,
@@ -186,14 +185,11 @@ class AnomalyDetector:
                 f"{'exceeds' if is_stale else 'within'} "
                 f"heartbeat {heartbeat_seconds/3600:.1f}h "
                 f"({heartbeat_ratio:.1f}x)"
-            )
+            ),
         )
 
     def detect_velocity_anomaly(
-        self,
-        current_value: float,
-        previous_value: float,
-        time_delta_hours: float = 24
+        self, current_value: float, previous_value: float, time_delta_hours: float = 24
     ) -> AnomalyResult:
         """
         Detect abnormal rate of change.
@@ -219,7 +215,7 @@ class AnomalyDetector:
                     mean=previous_value,
                     std_dev=0,
                     z_score=0,
-                    message="Both values are zero"
+                    message="Both values are zero",
                 )
             # Previous was zero, any change is technically infinite
             return AnomalyResult(
@@ -229,17 +225,23 @@ class AnomalyDetector:
                 mean=previous_value,
                 std_dev=0,
                 z_score=999,
-                message=f"Value changed from 0 to {current_value}"
+                message=f"Value changed from 0 to {current_value}",
             )
 
         # Calculate percentage change
         change_rate = abs(current_value - previous_value) / abs(previous_value)
 
         # Normalize to daily rate
-        daily_change = change_rate * (24 / time_delta_hours) if time_delta_hours > 0 else change_rate
+        daily_change = (
+            change_rate * (24 / time_delta_hours)
+            if time_delta_hours > 0
+            else change_rate
+        )
 
         is_anomaly = daily_change > self.velocity_threshold
-        velocity_ratio = daily_change / self.velocity_threshold if self.velocity_threshold > 0 else 0
+        velocity_ratio = (
+            daily_change / self.velocity_threshold if self.velocity_threshold > 0 else 0
+        )
 
         direction = "increase" if current_value > previous_value else "decrease"
 
@@ -254,7 +256,7 @@ class AnomalyDetector:
                 f"Daily {direction} rate {daily_change*100:.1f}% "
                 f"{'exceeds' if is_anomaly else 'within'} "
                 f"threshold {self.velocity_threshold*100:.1f}%"
-            )
+            ),
         )
 
     def run_all_checks(
@@ -264,7 +266,7 @@ class AnomalyDetector:
         last_update: Optional[datetime] = None,
         heartbeat_seconds: Optional[int] = None,
         previous_value: Optional[float] = None,
-        time_delta_hours: float = 24
+        time_delta_hours: float = 24,
     ) -> List[AnomalyResult]:
         """
         Run all applicable anomaly checks.
@@ -288,7 +290,7 @@ class AnomalyDetector:
             anomalies.append(value_result)
             logger.warning(
                 f"Value anomaly detected: {value_result.message}",
-                extra={"anomaly_type": "value_spike", "z_score": value_result.z_score}
+                extra={"anomaly_type": "value_spike", "z_score": value_result.z_score},
             )
 
         # Stale data check
@@ -298,7 +300,10 @@ class AnomalyDetector:
                 anomalies.append(stale_result)
                 logger.warning(
                     f"Stale data detected: {stale_result.message}",
-                    extra={"anomaly_type": "stale_data", "z_score": stale_result.z_score}
+                    extra={
+                        "anomaly_type": "stale_data",
+                        "z_score": stale_result.z_score,
+                    },
                 )
 
         # Velocity check
@@ -310,15 +315,15 @@ class AnomalyDetector:
                 anomalies.append(velocity_result)
                 logger.warning(
                     f"Velocity anomaly detected: {velocity_result.message}",
-                    extra={"anomaly_type": "velocity", "z_score": velocity_result.z_score}
+                    extra={
+                        "anomaly_type": "velocity",
+                        "z_score": velocity_result.z_score,
+                    },
                 )
 
         return anomalies
 
-    def get_expected_range(
-        self,
-        historical_values: List[float]
-    ) -> tuple[float, float]:
+    def get_expected_range(self, historical_values: List[float]) -> tuple[float, float]:
         """
         Calculate expected range for a rate based on history.
 
