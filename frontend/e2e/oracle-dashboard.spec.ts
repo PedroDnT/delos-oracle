@@ -1,11 +1,11 @@
 import { test, expect, type Page } from '@playwright/test'
 
 /**
- * The dashboard talks to the Python backend. These tests stub that backend at
- * the network layer so the suite exercises the real UI without needing the API
- * (or a funded oracle) to be running.
+ * The dashboard reads rates from Supabase's REST API. These tests stub that
+ * endpoint at the network layer so the suite exercises the real UI without a
+ * Supabase project (or a funded oracle) behind it.
  */
-const BACKEND_RATES = '**/rates'
+const BACKEND_RATES = '**/rest/v1/latest_rates*'
 
 const rate = (rate_type: string, raw_value: number, is_stale = false) => ({
   rate_type,
