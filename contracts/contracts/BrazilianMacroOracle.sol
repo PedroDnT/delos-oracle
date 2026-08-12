@@ -93,12 +93,21 @@ contract BrazilianMacroOracle is AccessControl, Pausable {
         // All use 8 decimals, values scaled by 10^8
         
         // IPCA: Monthly inflation, typically -2% to 2% monthly
+        //
+        // Heartbeats are measured against the BCB reference date, and BCB stamps
+        // monthly series to the first day of the reference month while publishing
+        // them weeks later. The July figure is dated 01/07 but only lands around
+        // 09/08, and it stays the freshest value until the August figure arrives
+        // around 09/09 — by then it is ~70 days old. A 35-day heartbeat would
+        // flag current data as stale for most of every month, so monthly series
+        // get 75 days: past the worst case with room for a late release, still
+        // under two publication cycles so a genuinely missed month is caught.
         _addRate(
-            "IPCA", 
-            "IPCA - Indice de Precos ao Consumidor Amplo", 
+            "IPCA",
+            "IPCA - Indice de Precos ao Consumidor Amplo",
             "Brazilian consumer price index, monthly inflation measure",
             CHAINLINK_DECIMALS,
-            35 days,        // heartbeat: monthly + buffer
+            75 days,        // heartbeat: monthly reference-date lag + buffer
             -10_00000000,   // min: -10%
             100_00000000    // max: 100%
         );
@@ -136,13 +145,13 @@ contract BrazilianMacroOracle is AccessControl, Pausable {
             15_00000000     // max: 15.0 BRL/USD
         );
         
-        // IGPM: General market price index
+        // IGPM: General market price index, monthly (same reference-date lag as IPCA)
         _addRate(
-            "IGPM", 
-            "IGPM - Indice Geral de Precos do Mercado", 
+            "IGPM",
+            "IGPM - Indice Geral de Precos do Mercado",
             "General market price index, monthly",
             CHAINLINK_DECIMALS,
-            35 days,
+            75 days,        // heartbeat: monthly reference-date lag + buffer
             -10_00000000,
             100_00000000
         );

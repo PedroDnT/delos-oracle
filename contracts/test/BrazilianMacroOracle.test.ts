@@ -8,6 +8,10 @@ import type {
 
 describe("BrazilianMacroOracle", function () {
   let ethers: HardhatEthers;
+  let networkHelpers: Awaited<
+    ReturnType<typeof network.getOrCreate>
+  >["networkHelpers"];
+  let time: typeof networkHelpers.time;
   let oracle: BrazilianMacroOracle;
   let owner: HardhatEthersSigner;
   let updater: HardhatEthersSigner;
@@ -27,7 +31,8 @@ describe("BrazilianMacroOracle", function () {
   const PTAX_5_81 = toAnswer(5.81);      // 581000000
 
   before(async function () {
-    ({ ethers } = await network.getOrCreate());
+    ({ ethers, networkHelpers } = await network.getOrCreate());
+    time = networkHelpers.time;
   });
 
   beforeEach(async function () {
@@ -322,6 +327,61 @@ describe("BrazilianMacroOracle", function () {
       const isStale = await oracle.isRateStale("IPCA");
       expect(isStale).to.be.true;
     });
+
+    // BCB stamps monthly series to the 1st of the reference month and publishes
+    // them weeks later, so the freshest figure the oracle can hold reaches
+    // ~70 days old before the next month's lands. Monthly heartbeats have to
+    // clear that or current data reads as stale for most of every month.
+    const MONTHLY_WORST_CASE_LAG = 70 * 24 * 60 * 60;
+
+    for (const rateType of ["IPCA", "IGPM"]) {
+      it(`Should keep ${rateType} fresh across the monthly publication lag`, async function () {
+        const snapshot = await networkHelpers.takeSnapshot();
+        try {
+          await oracle
+            .connect(updater)
+            .updateRate(rateType, toAnswer(0.5), 20240701, "BCB");
+
+          await time.increase(MONTHLY_WORST_CASE_LAG);
+          expect(await oracle.isRateStale(rateType)).to.be.false;
+        } finally {
+          await snapshot.restore();
+        }
+      });
+
+      it(`Should flag ${rateType} once a full month is missed`, async function () {
+        const snapshot = await networkHelpers.takeSnapshot();
+        try {
+          await oracle
+            .connect(updater)
+            .updateRate(rateType, toAnswer(0.5), 20240701, "BCB");
+
+          // Two publication cycles with no update — a genuinely broken feed.
+          await time.increase(2 * 62 * 24 * 60 * 60);
+          expect(await oracle.isRateStale(rateType)).to.be.true;
+        } finally {
+          await snapshot.restore();
+        }
+      });
+    }
+
+    for (const rateType of ["CDI", "SELIC", "PTAX", "TR"]) {
+      it(`Should keep ${rateType} fresh across a weekend`, async function () {
+        const snapshot = await networkHelpers.takeSnapshot();
+        try {
+          const answer = rateType === "PTAX" ? PTAX_5_81 : toAnswer(5);
+          await oracle
+            .connect(updater)
+            .updateRate(rateType, answer, 20240705, "BCB");
+
+          // Friday's figure has to survive to Monday.
+          await time.increase(2 * 24 * 60 * 60 - 60);
+          expect(await oracle.isRateStale(rateType)).to.be.false;
+        } finally {
+          await snapshot.restore();
+        }
+      });
+    }
   });
 
   describe("Rate Administration", function () {
