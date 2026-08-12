@@ -1,5 +1,5 @@
 # DELOS - Brazilian Macro Oracle Blueprint
-
+[![Sync BCB Rates to Supabase](https://github.com/PedroDnT/delos-oracle/actions/workflows/rate-sync.yml/badge.svg)](https://github.com/PedroDnT/delos-oracle/actions/workflows/rate-sync.yml)
 > Explorational implementation of on-chain macroeconomic data and tokenized debentures for Brazil
 
 [![Arbitrum Sepolia](https://img.shields.io/badge/Arbitrum-Sepolia-blue)](https://sepolia.arbiscan.io/)
