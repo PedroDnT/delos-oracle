@@ -1,4 +1,6 @@
-import { ethers } from "hardhat";
+import { network } from "hardhat";
+
+const { ethers } = await network.connect();
 
 /**
  * 🎯 DELOS - Script de Demonstração Completa

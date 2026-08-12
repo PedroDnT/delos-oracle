@@ -21,10 +21,10 @@ from bcb_client import (
     RateType,
 )
 
-
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
+
 
 class TestRateConfigs:
     def test_every_rate_type_is_configured(self):
@@ -56,6 +56,7 @@ class TestRateConfigs:
 # RESPONSE STRUCTURE VALIDATION
 # =============================================================================
 
+
 class TestValidateResponseStructure:
     def test_accepts_bcb_shaped_payload(self, bcb_client, bcb_payload):
         assert bcb_client.validate_response_structure(bcb_payload) is True
@@ -70,13 +71,13 @@ class TestValidateResponseStructure:
     @pytest.mark.parametrize(
         "payload",
         [
-            {"valor": [{"valor": "4.50"}]},          # dict instead of list
-            "not-json",                               # bare string
-            None,                                     # null body
-            [["16/11/2024", "10.90"]],                # list of lists
-            [{"valor": "10.90"}],                     # missing "data"
-            [{"data": "16/11/2024"}],                 # missing "valor"
-            [{"data": 20241116, "valor": "10.90"}],   # "data" not a string
+            {"valor": [{"valor": "4.50"}]},  # dict instead of list
+            "not-json",  # bare string
+            None,  # null body
+            [["16/11/2024", "10.90"]],  # list of lists
+            [{"valor": "10.90"}],  # missing "data"
+            [{"data": "16/11/2024"}],  # missing "valor"
+            [{"data": 20241116, "valor": "10.90"}],  # "data" not a string
             [{"data": "16/11/2024", "valor": None}],  # "valor" wrong type
         ],
     )
@@ -87,6 +88,7 @@ class TestValidateResponseStructure:
 # =============================================================================
 # URL BUILDING
 # =============================================================================
+
 
 class TestBuildUrl:
     def test_latest_n_records(self, bcb_client):
@@ -113,6 +115,7 @@ class TestBuildUrl:
 # PARSING & SCALING
 # =============================================================================
 
+
 class TestParsing:
     def test_parse_bcb_date(self, bcb_client):
         date_int, dt = bcb_client._parse_bcb_date("16/11/2024")
@@ -138,7 +141,7 @@ class TestParsing:
         assert bcb_client._scale_to_chainlink(value) == expected
 
     def test_chainlink_precision_matches_decimals(self):
-        assert CHAINLINK_PRECISION == 10 ** CHAINLINK_DECIMALS
+        assert CHAINLINK_PRECISION == 10**CHAINLINK_DECIMALS
 
 
 class TestProcessResponse:
@@ -180,6 +183,7 @@ class TestProcessResponse:
 # CIRCUIT BREAKERS
 # =============================================================================
 
+
 class TestCircuitBreakers:
     def test_rejects_value_above_maximum(self, bcb_client):
         # CDI max is 50%
@@ -214,6 +218,7 @@ class TestCircuitBreakers:
 # RATE DATA HELPERS
 # =============================================================================
 
+
 class TestRateData:
     def test_answer_as_percentage(self, cdi_rate_data):
         assert cdi_rate_data.answer_as_percentage == pytest.approx(10.90)
@@ -239,6 +244,7 @@ class TestRateData:
 # =============================================================================
 # FETCHING
 # =============================================================================
+
 
 @pytest.mark.asyncio
 class TestFetching:
@@ -323,7 +329,12 @@ class TestFetchWithRetry:
         self, bcb_client, cdi_rate_data
     ):
         fetch_latest = AsyncMock(
-            side_effect=[BCBAPIError("1"), BCBAPIError("2"), BCBAPIError("3"), cdi_rate_data]
+            side_effect=[
+                BCBAPIError("1"),
+                BCBAPIError("2"),
+                BCBAPIError("3"),
+                cdi_rate_data,
+            ]
         )
         sleep = AsyncMock()
         with patch.object(bcb_client, "fetch_latest", fetch_latest), patch(
@@ -340,9 +351,13 @@ class TestFetchWithRetry:
 @pytest.mark.asyncio
 class TestHealthCheck:
     async def test_healthy_when_fetch_succeeds(self, bcb_client, cdi_rate_data):
-        with patch.object(bcb_client, "fetch_latest", AsyncMock(return_value=cdi_rate_data)):
+        with patch.object(
+            bcb_client, "fetch_latest", AsyncMock(return_value=cdi_rate_data)
+        ):
             assert await bcb_client.health_check() is True
 
     async def test_unhealthy_when_fetch_fails(self, bcb_client):
-        with patch.object(bcb_client, "fetch_latest", AsyncMock(side_effect=BCBAPIError("down"))):
+        with patch.object(
+            bcb_client, "fetch_latest", AsyncMock(side_effect=BCBAPIError("down"))
+        ):
             assert await bcb_client.health_check() is False

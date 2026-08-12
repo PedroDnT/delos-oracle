@@ -32,8 +32,10 @@ export function RateDashboard() {
           {error instanceof Error ? error.message : 'Unknown error'}
         </p>
         <p className="text-sm text-gray-600 mt-3">
-          Make sure the backend API is running at{' '}
-          {process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000'}
+          Could not reach Supabase
+          {process.env.NEXT_PUBLIC_SUPABASE_URL
+            ? ` at ${process.env.NEXT_PUBLIC_SUPABASE_URL}`
+            : ' — NEXT_PUBLIC_SUPABASE_URL is not configured'}
         </p>
       </div>
     )

@@ -29,10 +29,15 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    // In-process EDR network used by the test suite
-    hardhat: {
+    // In-process EDR network used by the test suite. Hardhat 3 names it
+    // "default" (network.connect() with no argument resolves here).
+    // allowUnlimitedContractSize lets tests deploy DebentureFactory (28KB,
+    // over the 24KB Spurious Dragon limit) — a testnet/L2 deployment concern,
+    // not a test concern.
+    default: {
       type: "edr-simulated",
       chainType: "l1",
+      allowUnlimitedContractSize: true,
     },
     // Arbitrum Sepolia (testnet)
     arbitrumSepolia: {

@@ -419,4 +419,4 @@ components/
 
 ---
 
-**Read Next**: `WEEK1-ORACLE.md` for implementation details
+**Read Next**: [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for implementation details
