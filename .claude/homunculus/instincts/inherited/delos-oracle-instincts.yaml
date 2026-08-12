@@ -1,0 +1,316 @@
+# Instincts generated from https://github.com/PedroDnT/delos-oracle
+# Generated: 2026-06-19T22:34:03.101Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: delos-oracle-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/PedroDnT/delos-oracle
+---
+
+# Delos Oracle Commit Length
+
+## Action
+
+Write moderate-length commit messages (~63 characters)
+
+## Evidence
+
+- Average commit message length: 63 chars
+- Based on 1 commits
+
+---
+id: delos-oracle-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/PedroDnT/delos-oracle
+---
+
+# Delos Oracle Naming Files
+
+## Action
+
+Use kebab-case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: kebab-case
+
+---
+id: delos-oracle-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/PedroDnT/delos-oracle
+---
+
+# Delos Oracle Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: delos-oracle-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/PedroDnT/delos-oracle
+---
+
+# Delos Oracle Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: delos-oracle-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/PedroDnT/delos-oracle
+---
+
+# Delos Oracle Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: delos-oracle-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct File Naming
+
+## Action
+
+Name the file using kebab-case
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+
+---
+id: delos-oracle-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+
+---
+id: delos-oracle-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+
+---
+id: delos-oracle-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: delos-oracle-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+
+---
+id: delos-oracle-instinct-export-style
+trigger: "When exporting functions or variables"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+
+---
+id: delos-oracle-instinct-commit-format
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Commit Format
+
+## Action
+
+Write a freeform message, optionally starting with a capitalized verb and describing the change
+
+## Evidence
+
+- Pattern in commits.examples
+- No strict prefix detected
+
+---
+id: delos-oracle-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 60 characters
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: delos-oracle-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Test Location
+
+## Action
+
+Place test files in a separate directory from source files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: delos-oracle-instinct-single-package-structure
+trigger: "When adding new modules or features"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Single Package Structure
+
+## Action
+
+Organize code within a single-package repository structure
+
+## Evidence
+
+- Pattern in architecture.folderStructure.type
+
+---
+id: delos-oracle-instinct-frontend-folder
+trigger: "When adding frontend code"
+confidence: 0.9
+domain: architecture
+source: repo-analysis
+source_repo: PedroDnT/delos-oracle
+---
+
+# Delos Oracle Instinct Frontend Folder
+
+## Action
+
+Place frontend code in the 'frontend' folder
+
+## Evidence
+
+- Pattern in architecture.folderStructure.commonFolders
+
