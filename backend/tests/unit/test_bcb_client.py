@@ -5,7 +5,7 @@ These exercise parsing, Chainlink scaling, circuit breakers and retry
 behaviour without touching the network.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -50,6 +50,41 @@ class TestRateConfigs:
     def test_bounds_are_ordered(self):
         for rate_type, config in RATE_CONFIGS.items():
             assert config.min_value < config.max_value, rate_type
+
+    # Staleness is measured against the BCB reference date, and BCB stamps
+    # monthly series to the 1st of the reference month while publishing them
+    # weeks later. IPCA's July figure (dated 01/07) only lands around 09/08 and
+    # stays the freshest value until August's arrives around 09/09 — ~70 days
+    # after its own reference date. A heartbeat below that flags current data as
+    # stale; see the module docstring in bcb_client.py.
+    MONTHLY_WORST_CASE_LAG_DAYS = 70
+
+    def test_monthly_heartbeats_cover_the_publication_lag(self):
+        monthly = {
+            rate_type: config
+            for rate_type, config in RATE_CONFIGS.items()
+            if config.update_frequency == "monthly"
+        }
+        assert set(monthly) == {RateType.IPCA, RateType.IGPM}
+
+        for rate_type, config in monthly.items():
+            assert (
+                config.heartbeat_seconds > self.MONTHLY_WORST_CASE_LAG_DAYS * 24 * 3600
+            ), rate_type
+
+    def test_monthly_heartbeats_still_catch_a_missed_month(self):
+        # Two full publication cycles must trip staleness, otherwise a series
+        # that stops updating goes unnoticed.
+        for rate_type, config in RATE_CONFIGS.items():
+            if config.update_frequency == "monthly":
+                assert config.heartbeat_seconds < 2 * 62 * 24 * 3600, rate_type
+
+    def test_daily_heartbeats_span_a_weekend(self):
+        # BCB publishes on business days only, so Friday's figure must stay
+        # fresh through the weekend.
+        for rate_type, config in RATE_CONFIGS.items():
+            if config.update_frequency == "daily":
+                assert config.heartbeat_seconds >= 2 * 24 * 3600, rate_type
 
 
 # =============================================================================
@@ -259,6 +294,74 @@ class TestFetching:
         with patch.object(bcb_client, "_request", AsyncMock(return_value=[])):
             with pytest.raises(BCBNoDataError):
                 await bcb_client.fetch_latest(RateType.CDI)
+
+    async def test_fetch_latest_skips_forward_dated_rows(self, bcb_client):
+        # Series 432 (Meta Selic) is stamped for every day of the Copom
+        # decision's validity window, so its newest rows are in the future.
+        # Taking one of those as "current" would make staleness meaningless.
+        today = datetime.now()
+        payload = [
+            {
+                "data": (today - timedelta(days=1)).strftime("%d/%m/%Y"),
+                "valor": "13.75",
+            },
+            {
+                "data": (today + timedelta(days=20)).strftime("%d/%m/%Y"),
+                "valor": "14.00",
+            },
+            {
+                "data": (today + timedelta(days=40)).strftime("%d/%m/%Y"),
+                "valor": "14.00",
+            },
+        ]
+
+        with patch.object(bcb_client, "_request", AsyncMock(return_value=payload)):
+            result = await bcb_client.fetch_latest(RateType.SELIC)
+
+        assert result.raw_value == pytest.approx(13.75)
+        assert result.timestamp.date() <= today.date()
+
+    async def test_fetch_latest_accepts_a_row_dated_today(self, bcb_client):
+        payload = [{"data": datetime.now().strftime("%d/%m/%Y"), "valor": "13.75"}]
+
+        with patch.object(bcb_client, "_request", AsyncMock(return_value=payload)):
+            result = await bcb_client.fetch_latest(RateType.SELIC)
+
+        assert result.raw_value == pytest.approx(13.75)
+
+    async def test_fetch_latest_raises_when_every_row_is_forward_dated(
+        self, bcb_client
+    ):
+        payload = [
+            {
+                "data": (datetime.now() + timedelta(days=20)).strftime("%d/%m/%Y"),
+                "valor": "14.00",
+            }
+        ]
+
+        with patch.object(bcb_client, "_request", AsyncMock(return_value=payload)):
+            with pytest.raises(BCBNoDataError, match="future"):
+                await bcb_client.fetch_latest(RateType.SELIC)
+
+    async def test_fetch_latest_queries_a_range_ending_today(self, bcb_client):
+        # `ultimos/N` cannot express "not in the future" and BCB caps N at 20,
+        # short of SELIC's forward-dated window — so this has to be a range.
+        request = AsyncMock(return_value=[])
+        with patch.object(bcb_client, "_request", request):
+            with pytest.raises(BCBNoDataError):
+                await bcb_client.fetch_latest(RateType.SELIC)
+
+        url = request.await_args.args[0]
+        today = datetime.now()
+        expected_start = today - timedelta(days=bcb_client.LATEST_LOOKBACK_DAYS)
+        assert "/ultimos/" not in url
+        assert f"dataFinal={today.strftime('%d/%m/%Y')}" in url
+        assert f"dataInicial={expected_start.strftime('%d/%m/%Y')}" in url
+
+    async def test_lookback_covers_the_monthly_publication_lag(self, bcb_client):
+        # Otherwise IPCA/IGP-M can fall out of range entirely and read as
+        # "no data" rather than as their genuine latest figure.
+        assert bcb_client.LATEST_LOOKBACK_DAYS > 70
 
     async def test_fetch_history_returns_all_records(self, bcb_client, bcb_payload):
         with patch.object(bcb_client, "_request", AsyncMock(return_value=bcb_payload)):

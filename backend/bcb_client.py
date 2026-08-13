@@ -10,7 +10,7 @@ Standards Compliance:
 Supported Rates:
 | Rate  | BCB Series | Type           | Decimals | Description                          |
 |-------|------------|----------------|----------|--------------------------------------|
-| IPCA  | 433        | Inflation %    | 8        | Consumer price index, monthly YoY    |
+| IPCA  | 433        | Inflation %    | 8        | Consumer price index, monthly change |
 | CDI   | 12         | Interest Rate  | 8        | Interbank deposit rate, annualized   |
 | SELIC | 432        | Interest Rate  | 8        | Central bank target rate             |
 | PTAX  | 1          | FX Rate        | 8        | USD/BRL official exchange rate       |
@@ -21,6 +21,23 @@ Chainlink Decimal Convention:
 - USD pairs: 8 decimals (e.g., ETH/USD returns 140330173736 = $1,403.30173736)
 - ETH pairs: 18 decimals
 - We use 8 decimals for all rates to match Chainlink USD feed convention
+
+Heartbeats and the monthly-series reference-date lag:
+- Staleness is measured against `real_world_date`, the BCB reference date, not
+  the moment we fetched the series. BCB stamps a monthly series to the *first
+  day of the reference month* and publishes it weeks later, so the newest
+  available figure is already old the day it appears and keeps ageing until
+  the next month's figure lands.
+- Worst case for IPCA: the July figure is dated 01/07 and published around
+  09/08; the August figure only lands around 09/09, so on 08/09 the freshest
+  value the oracle can hold is dated 01/07 — roughly 70 days old.
+- IGP-M is stamped the same way and publishes near the end of the reference
+  month, peaking around 59 days.
+- A 35-day heartbeat therefore flags perfectly current monthly data as stale
+  for most of every month. Monthly series use 75 days: above the ~70-day worst
+  case with room for a late release, and still well below two publication
+  cycles, so a genuinely missed month is still caught.
+- Daily series keep a 2-day heartbeat (BCB skips weekends and holidays).
 
 Value Encoding:
 - 4.50% interest rate → 450000000 (4.5 * 10^8)
@@ -88,9 +105,9 @@ class RateConfig:
 RATE_CONFIGS: Dict[RateType, RateConfig] = {
     RateType.IPCA: RateConfig(
         bcb_series=433,
-        description="IPCA - Brazilian Consumer Price Index (Monthly YoY %)",
+        description="IPCA - Brazilian Consumer Price Index (Monthly % change)",
         decimals=CHAINLINK_DECIMALS,
-        heartbeat_seconds=35 * 24 * 3600,  # 35 days
+        heartbeat_seconds=75 * 24 * 3600,  # 75 days (see docstring)
         min_value=-10_00000000,  # -10% (scaled)
         max_value=100_00000000,  # 100% (scaled)
         is_percentage=True,
@@ -130,7 +147,7 @@ RATE_CONFIGS: Dict[RateType, RateConfig] = {
         bcb_series=189,
         description="IGP-M - General Market Price Index (Monthly %)",
         decimals=CHAINLINK_DECIMALS,
-        heartbeat_seconds=35 * 24 * 3600,  # 35 days
+        heartbeat_seconds=75 * 24 * 3600,  # 75 days (see docstring)
         min_value=-10_00000000,  # -10%
         max_value=100_00000000,  # 100%
         is_percentage=True,
@@ -297,6 +314,11 @@ class BCBClient:
 
     BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{series}/dados"
     TIMEOUT = 30.0
+
+    # How far back fetch_latest looks for the newest effective observation.
+    # Must exceed the monthly publication lag (~70 days, see module docstring)
+    # so IPCA and IGP-M always have at least one row in range.
+    LATEST_LOOKBACK_DAYS = 180
 
     def __init__(self, timeout: float = TIMEOUT, validate: bool = True):
         """
@@ -554,26 +576,51 @@ class BCBClient:
 
     async def fetch_latest(self, rate_type: RateType) -> RateData:
         """
-        Fetch the most recent value for a rate.
+        Fetch the most recent value for a rate that is in effect today.
+
+        Some BCB series are published forward-dated. Series 432 (Meta Selic) is
+        stamped for every day of the Copom decision's validity window, so its
+        newest row sits up to ~50 days in the future — asking for `ultimos/1`
+        returns a rate that has not taken effect yet, and stamping it as the
+        current observation makes staleness detection meaningless.
+
+        `ultimos/N` cannot solve this: BCB caps N at 20, which for a daily
+        series is less than the forward-dated window. So we query a date range
+        ending today instead, and take the newest row it returns.
 
         Args:
             rate_type: Type of rate to fetch
 
         Returns:
-            Most recent RateData in Chainlink format
+            Most recent effective RateData in Chainlink format
 
         Raises:
             BCBNoDataError: No data available
             BCBValidationError: Value failed circuit breaker
         """
-        url = self._build_url(rate_type, count=1)
+        end = datetime.now()
+        start = end - timedelta(days=self.LATEST_LOOKBACK_DAYS)
+        url = self._build_url(
+            rate_type,
+            start_date=start.strftime("%d/%m/%Y"),
+            end_date=end.strftime("%d/%m/%Y"),
+        )
         data = await self._request(url)
         results = self._process_response(data, rate_type)
 
-        if not results:
+        today = datetime.now().date()
+        effective = [r for r in results if r.timestamp.date() <= today]
+
+        if not effective:
+            if results:
+                raise BCBNoDataError(
+                    f"No effective data for {rate_type.value}: newest of "
+                    f"{len(results)} rows is {results[0].real_world_date_str}, "
+                    f"dated in the future"
+                )
             raise BCBNoDataError(f"No valid data for {rate_type.value}")
 
-        result = results[0]
+        result = effective[0]
         logger.info(
             f"Fetched {rate_type.value}: {result.raw_value} -> "
             f"{result.answer} (8 dec) | {result.real_world_date_str}"
