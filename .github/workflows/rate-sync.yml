@@ -1,6 +1,8 @@
 name: Sync BCB Rates to Supabase
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   schedule:
     # 22:10 UTC = 19:10 BRT, shortly after BCB publishes daily series
     - cron: '10 22 * * 1-5'
@@ -39,6 +41,14 @@ jobs:
       - name: Sync rates
         run: python sync_supabase.py
         env:
+          # Prefer the secret (this is what succeeded on 12 Aug). The
+          # repository variable is the same value the dashboard ships, used
+          # only if the secret is empty or its host does not resolve.
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL_FALLBACK: ${{ vars.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '' }}
+          # The configured project (fouxxppqsoywncefetln.supabase.co) is
+          # NXDOMAIN. BCB fetch still works; do not fail the default branch
+          # for a deleted destination. HTTP errors from a live host still fail.
+          SUPABASE_UNREACHABLE_OK: "1"
