@@ -1,0 +1,29 @@
+# Equivalent of the GitHub Codespaces prebuild "Create Template" step:
+# build `.devcontainer/Dockerfile`. Prebuilds only run on configured
+# branches (typically main), so this job gives PRs the same signal.
+name: Dev Container image
+
+on:
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Codespaces Dockerfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build .devcontainer/Dockerfile
+        run: docker build -f .devcontainer/Dockerfile .

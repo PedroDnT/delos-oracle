@@ -26,7 +26,9 @@ fi
 SOLANA_BIN="${HOME}/.local/share/solana/install/active_release/bin"
 if ! command -v solana &>/dev/null; then
   echo "[2/4] Installing Solana CLI ${SOLANA_VERSION}..."
-  sh -c "$(curl -sSfL https://release.solana.com/v${SOLANA_VERSION}/install)"
+  curl -sSfL "https://release.anza.xyz/v${SOLANA_VERSION}/install" -o /tmp/solana-install.sh
+  sh /tmp/solana-install.sh
+  rm -f /tmp/solana-install.sh
   export PATH="${SOLANA_BIN}:${PATH}"
   # Add to shell profile
   for rc in ~/.bashrc ~/.zshrc; do
@@ -38,12 +40,14 @@ else
   echo "[2/4] Solana already installed ($(solana --version))"
 fi
 
-# ── Anchor via avm ────────────────────────────────────────────────────────────
+# ── Anchor CLI ────────────────────────────────────────────────────────────────
 if ! command -v anchor &>/dev/null; then
-  echo "[3/4] Installing Anchor ${ANCHOR_VERSION} via avm..."
-  cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
-  avm install "${ANCHOR_VERSION}"
-  avm use "${ANCHOR_VERSION}"
+  echo "[3/4] Installing Anchor ${ANCHOR_VERSION}..."
+  # Compile 0.30.1 with rustc 1.79: rustc >= 1.80 cannot use the tag's --locked
+  # lockfile, and an unlocked resolve on 1.84 pulls edition2024 crates.
+  rustup toolchain install 1.79.0 --profile minimal
+  rustup run 1.79.0 cargo install --git https://github.com/solana-foundation/anchor \
+    --tag "v${ANCHOR_VERSION}" anchor-cli --locked --force
 else
   echo "[3/4] Anchor already installed ($(anchor --version))"
 fi
