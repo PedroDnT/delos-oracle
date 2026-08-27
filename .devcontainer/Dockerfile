@@ -23,14 +23,14 @@ RUN curl -sSfL "https://release.anza.xyz/v${SOLANA_VERSION}/install" -o /tmp/sol
     && rm /tmp/solana-install.sh
 ENV PATH="/root/.local/share/solana/install/active_release/bin:${PATH}"
 
-# Anchor CLI. Do not `cargo install` AVM from unpinned git HEAD: the current
-# workspace requires Cargo edition2024, which is not stable in Rust 1.84.
-# Install the CLI from the same tagged release this image already pinned.
-# Omit --locked: 0.30.1's lockfile pins a `time` crate that does not build
-# on rustc >= 1.80.
+# Anchor 0.30.1 must be compiled with rustc 1.79:
+# - Unpinned `cargo install --git ... avm` follows HEAD, which needs edition2024.
+# - On rustc 1.84, `--locked` fails (old `time` crate vs rustc >= 1.80) and an
+#   unlocked resolve pulls crates that require edition2024 / rustc 1.85–1.88.
 ENV ANCHOR_VERSION=0.30.1
-RUN cargo install --git https://github.com/solana-foundation/anchor \
-        --tag "v${ANCHOR_VERSION}" anchor-cli --force \
+RUN rustup toolchain install 1.79.0 --profile minimal \
+    && rustup run 1.79.0 cargo install --git https://github.com/solana-foundation/anchor \
+        --tag "v${ANCHOR_VERSION}" anchor-cli --locked --force \
     && anchor --version
 
 # Generate a dev keypair for container use

@@ -43,10 +43,11 @@ fi
 # ── Anchor CLI ────────────────────────────────────────────────────────────────
 if ! command -v anchor &>/dev/null; then
   echo "[3/4] Installing Anchor ${ANCHOR_VERSION}..."
-  # Pin the tag: unpinned git HEAD requires edition2024 (Rust 1.85+).
-  # Omit --locked so the 0.30.1 `time` crate pin can resolve on rustc >= 1.80.
-  cargo install --git https://github.com/solana-foundation/anchor \
-    --tag "v${ANCHOR_VERSION}" anchor-cli --force
+  # Compile 0.30.1 with rustc 1.79: rustc >= 1.80 cannot use the tag's --locked
+  # lockfile, and an unlocked resolve on 1.84 pulls edition2024 crates.
+  rustup toolchain install 1.79.0 --profile minimal
+  rustup run 1.79.0 cargo install --git https://github.com/solana-foundation/anchor \
+    --tag "v${ANCHOR_VERSION}" anchor-cli --locked --force
 else
   echo "[3/4] Anchor already installed ($(anchor --version))"
 fi
