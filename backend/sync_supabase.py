@@ -7,13 +7,9 @@ long-running backend server.
 
 Environment:
     SUPABASE_URL               https://<project>.supabase.co
+    SUPABASE_URL_FALLBACK      optional second origin (repository variable)
     SUPABASE_SERVICE_ROLE_KEY  service-role key (writes bypass RLS; never ship
                                this to a browser)
-    DRY_RUN                    if set, fetch and print, write nothing
-    SUPABASE_UNREACHABLE_OK    if set, a DNS/connect failure after a successful
-                               BCB fetch exits 0 instead of 1 (the destination
-                               host is gone or misconfigured; the fetch itself
-                               worked)
 
 Usage:
     python sync_supabase.py            # fetch all rates and upsert
@@ -40,16 +36,36 @@ def env_flag(name: str) -> bool:
     return os.environ.get(name, "") not in ("", "0", "false", "False")
 
 
+def _clean(raw: str) -> str:
+    return (raw or "").strip().strip('"').strip("'")
+
+
+def looks_like_jwt(raw: str) -> bool:
+    value = _clean(raw)
+    if "://" in value:
+        return False
+    return value.startswith(("eyJ", "sb_secret_", "sb_service_role_"))
+
+
+def looks_like_supabase_origin(raw: str) -> bool:
+    value = _clean(raw).lower()
+    return (
+        "supabase.co" in value
+        or "supabase.com" in value
+        or value.startswith("http://")
+        or value.startswith("https://")
+    )
+
+
 def normalize_supabase_url(raw: str) -> str:
     """
     Turn a pasted project URL (or bare project ref) into an origin.
 
-    GitHub secrets and variables commonly pick up surrounding quotes or a
-    trailing newline from the UI; those make DNS lookup fail with
-    "Name or service not known".
+    GitHub secrets commonly pick up surrounding quotes or a trailing newline
+    from the UI; those make DNS lookup fail with "Name or service not known".
     """
-    url = (raw or "").strip().strip('"').strip("'")
-    if not url:
+    url = _clean(raw)
+    if not url or looks_like_jwt(url):
         return ""
     if "://" not in url:
         url = "https://" + url
@@ -58,7 +74,7 @@ def normalize_supabase_url(raw: str) -> str:
     host = (parsed.hostname or "").strip()
     if not host:
         return ""
-    # A 20-char project ref pasted without a domain still needs .supabase.co.
+    # A project ref pasted without a domain still needs .supabase.co.
     if "." not in host:
         host = f"{host}.supabase.co"
         url = f"https://{host}"
@@ -78,6 +94,56 @@ def supabase_host_resolves(url: str) -> bool:
         return True
     except OSError:
         return False
+
+
+def resolve_credentials() -> tuple[str, str, str]:
+    """
+    Return (origin, service_role_key, source_label).
+
+    Handles the usual GitHub-secret footguns: trailing newlines, quoted
+    values, URL/key pasted into each other's slots, and a public variable
+    as fallback when the secret's host is gone.
+    """
+    url_raw = os.environ.get("SUPABASE_URL", "")
+    fallback_raw = os.environ.get("SUPABASE_URL_FALLBACK", "")
+    key_raw = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    if looks_like_jwt(url_raw) and looks_like_supabase_origin(key_raw):
+        logger.warning(
+            "SUPABASE_URL looks like a key and SUPABASE_SERVICE_ROLE_KEY "
+            "looks like a project URL; swapping them"
+        )
+        url_raw, key_raw = key_raw, url_raw
+
+    key = _clean(key_raw)
+    candidates: list[tuple[str, str]] = []
+    for label, raw in (
+        ("SUPABASE_URL", url_raw),
+        ("SUPABASE_URL_FALLBACK", fallback_raw),
+    ):
+        origin = normalize_supabase_url(raw)
+        if origin and origin not in {c[0] for c in candidates}:
+            candidates.append((origin, label))
+            stripped = raw.strip()
+            logger.info(
+                f"{label}: host={supabase_hostname(origin)!r} "
+                f"newline={raw != stripped} quoted={stripped[:1] in ('\"', chr(39))}"
+            )
+
+    if not candidates:
+        return "", key, ""
+
+    for origin, label in candidates:
+        if supabase_host_resolves(origin):
+            logger.info(f"Using {label} host {supabase_hostname(origin)}")
+            return origin, key, label
+
+    origin, label = candidates[0]
+    logger.warning(
+        f"No Supabase host resolved; will try {label} "
+        f"({supabase_hostname(origin)}) anyway"
+    )
+    return origin, key, label
 
 
 def rate_to_row(rate: RateData) -> dict:
@@ -137,8 +203,7 @@ async def sync() -> int:
     """Fetch all rates from BCB and store them. Returns a process exit code."""
     dry_run = env_flag("DRY_RUN")
 
-    supabase_url = normalize_supabase_url(os.environ.get("SUPABASE_URL", ""))
-    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    supabase_url, service_role_key, _source = resolve_credentials()
     if not dry_run and (not supabase_url or not service_role_key):
         logger.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required")
         return 2
@@ -165,35 +230,23 @@ async def sync() -> int:
         logger.info(f"DRY_RUN: skipping upsert of {len(rows)} rows")
         return 0
 
-    if not supabase_host_resolves(supabase_url):
-        return _unreachable(
-            supabase_url,
-            "does not resolve (NXDOMAIN / Name or service not known)",
-        )
-
     try:
         await upsert_rates(rows, supabase_url, service_role_key)
     except httpx.ConnectError as exc:
-        return _unreachable(supabase_url, str(exc))
+        logger.error(
+            f"Supabase host {supabase_hostname(supabase_url)!r} is unreachable: "
+            f"{exc}. Rates were fetched from BCB but not written."
+        )
+        return 1
+    except httpx.HTTPStatusError as exc:
+        logger.error(
+            f"Supabase rejected the upsert with HTTP {exc.response.status_code}: "
+            f"{exc.response.text[:300]}"
+        )
+        return 1
 
     logger.info(f"Upserted {len(rows)} rates into Supabase")
     return 0
-
-
-def _unreachable(supabase_url: str, reason: str) -> int:
-    host = supabase_hostname(supabase_url)
-    logger.error(
-        f"Supabase host {host!r} is unreachable: {reason}. "
-        "Check SUPABASE_URL (strip quotes/newlines; the project URL is a "
-        "repository variable, not a secret)."
-    )
-    if env_flag("SUPABASE_UNREACHABLE_OK"):
-        logger.warning(
-            "SUPABASE_UNREACHABLE_OK is set; BCB fetch succeeded so this "
-            "run exits 0. Rates were not written."
-        )
-        return 0
-    return 1
 
 
 def main() -> None:

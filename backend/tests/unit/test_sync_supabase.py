@@ -22,8 +22,42 @@ class TestNormalizeSupabaseUrl:
             == "https://abcdefghijklmnopqr.supabase.co"
         )
 
+    def test_rejects_a_jwt(self):
+        assert sync_supabase.normalize_supabase_url("eyJhbGciOiJIUzI1NiJ9.aa.bb") == ""
+
     def test_empty_stays_empty(self):
         assert sync_supabase.normalize_supabase_url("   ") == ""
+
+
+class TestResolveCredentials:
+    def test_swaps_url_and_key_when_pasted_into_the_wrong_slots(self, monkeypatch):
+        monkeypatch.setenv("SUPABASE_URL", "eyJhbGciOiJIUzI1NiJ9.aa.bb")
+        monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "https://live.supabase.co\n")
+        monkeypatch.delenv("SUPABASE_URL_FALLBACK", raising=False)
+
+        with patch.object(sync_supabase, "supabase_host_resolves", return_value=True):
+            origin, key, source = sync_supabase.resolve_credentials()
+
+        assert origin == "https://live.supabase.co"
+        assert key == "eyJhbGciOiJIUzI1NiJ9.aa.bb"
+        assert source == "SUPABASE_URL"
+
+    def test_prefers_a_resolving_fallback_over_a_dead_secret(self, monkeypatch):
+        monkeypatch.setenv("SUPABASE_URL", "https://dead.supabase.co")
+        monkeypatch.setenv("SUPABASE_URL_FALLBACK", "https://live.supabase.co")
+        monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-key")
+
+        def resolves(url: str) -> bool:
+            return "live" in url
+
+        with patch.object(
+            sync_supabase, "supabase_host_resolves", side_effect=resolves
+        ):
+            origin, key, source = sync_supabase.resolve_credentials()
+
+        assert origin == "https://live.supabase.co"
+        assert key == "service-key"
+        assert source == "SUPABASE_URL_FALLBACK"
 
 
 class TestRateToRow:
@@ -85,6 +119,7 @@ class TestUpsert:
 class TestSync:
     async def test_fails_fast_without_credentials(self, monkeypatch):
         monkeypatch.delenv("SUPABASE_URL", raising=False)
+        monkeypatch.delenv("SUPABASE_URL_FALLBACK", raising=False)
         monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
         monkeypatch.delenv("DRY_RUN", raising=False)
         assert await sync_supabase.sync() == 2
@@ -142,58 +177,8 @@ class TestSync:
         with patch.object(sync_supabase, "BCBClient", return_value=bcb):
             assert await sync_supabase.sync() == 1
 
-    async def test_connect_error_is_soft_when_unreachable_ok(
-        self, monkeypatch, cdi_rate_data
-    ):
+    async def test_connect_error_fails(self, monkeypatch, cdi_rate_data):
         monkeypatch.delenv("DRY_RUN", raising=False)
-        monkeypatch.setenv("SUPABASE_URL", "https://gone.supabase.co\n")
-        monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-key")
-        monkeypatch.setenv("SUPABASE_UNREACHABLE_OK", "1")
-
-        bcb = MagicMock()
-        bcb.__aenter__ = AsyncMock(return_value=bcb)
-        bcb.__aexit__ = AsyncMock(return_value=False)
-        bcb.fetch_all_latest_parallel = AsyncMock(
-            return_value={RateType.CDI: cdi_rate_data}
-        )
-
-        with patch.object(sync_supabase, "BCBClient", return_value=bcb), patch.object(
-            sync_supabase, "supabase_host_resolves", return_value=True
-        ), patch.object(
-            sync_supabase,
-            "upsert_rates",
-            AsyncMock(side_effect=httpx.ConnectError("Name or service not known")),
-        ):
-            assert await sync_supabase.sync() == 0
-
-    async def test_nxdomain_is_soft_when_unreachable_ok(
-        self, monkeypatch, cdi_rate_data
-    ):
-        monkeypatch.delenv("DRY_RUN", raising=False)
-        monkeypatch.setenv("SUPABASE_URL", "https://gone.supabase.co")
-        monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-key")
-        monkeypatch.setenv("SUPABASE_UNREACHABLE_OK", "1")
-
-        bcb = MagicMock()
-        bcb.__aenter__ = AsyncMock(return_value=bcb)
-        bcb.__aexit__ = AsyncMock(return_value=False)
-        bcb.fetch_all_latest_parallel = AsyncMock(
-            return_value={RateType.CDI: cdi_rate_data}
-        )
-        upsert = AsyncMock()
-
-        with patch.object(sync_supabase, "BCBClient", return_value=bcb), patch.object(
-            sync_supabase, "supabase_host_resolves", return_value=False
-        ), patch.object(sync_supabase, "upsert_rates", upsert):
-            assert await sync_supabase.sync() == 0
-
-        upsert.assert_not_awaited()
-
-    async def test_connect_error_fails_without_unreachable_ok(
-        self, monkeypatch, cdi_rate_data
-    ):
-        monkeypatch.delenv("DRY_RUN", raising=False)
-        monkeypatch.delenv("SUPABASE_UNREACHABLE_OK", raising=False)
         monkeypatch.setenv("SUPABASE_URL", "https://gone.supabase.co")
         monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-key")
 
