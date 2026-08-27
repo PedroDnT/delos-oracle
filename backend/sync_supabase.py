@@ -10,6 +10,10 @@ Environment:
     SUPABASE_URL_FALLBACK      optional second origin (repository variable)
     SUPABASE_SERVICE_ROLE_KEY  service-role key (writes bypass RLS; never ship
                                this to a browser)
+    DRY_RUN                    if set, fetch and print, write nothing
+    SUPABASE_UNREACHABLE_OK    if set, a DNS failure after a successful BCB
+                               fetch exits 0 (the configured project is gone;
+                               the fetch itself worked)
 
 Usage:
     python sync_supabase.py            # fetch all rates and upsert
@@ -140,9 +144,9 @@ def resolve_credentials() -> tuple[str, str, str]:
             return origin, key, label
 
     origin, label = candidates[0]
-    logger.warning(
-        f"No Supabase host resolved; will try {label} "
-        f"({supabase_hostname(origin)}) anyway"
+    logger.error(
+        f"Supabase host {supabase_hostname(origin)!r} from {label} "
+        "does not resolve (NXDOMAIN)"
     )
     return origin, key, label
 
@@ -231,6 +235,21 @@ async def sync() -> int:
         logger.info(f"DRY_RUN: skipping upsert of {len(rows)} rows")
         return 0
 
+    if not supabase_host_resolves(supabase_url):
+        logger.error(
+            f"Supabase host {supabase_hostname(supabase_url)!r} is unreachable "
+            "(NXDOMAIN / Name or service not known). Rates were fetched from "
+            "BCB but not written. Point SUPABASE_URL at a live project to "
+            "resume upserts."
+        )
+        if env_flag("SUPABASE_UNREACHABLE_OK"):
+            logger.warning(
+                "SUPABASE_UNREACHABLE_OK is set; exiting 0 after a successful "
+                "BCB fetch."
+            )
+            return 0
+        return 1
+
     try:
         await upsert_rates(rows, supabase_url, service_role_key)
     except httpx.ConnectError as exc:
@@ -238,6 +257,12 @@ async def sync() -> int:
             f"Supabase host {supabase_hostname(supabase_url)!r} is unreachable: "
             f"{exc}. Rates were fetched from BCB but not written."
         )
+        if env_flag("SUPABASE_UNREACHABLE_OK"):
+            logger.warning(
+                "SUPABASE_UNREACHABLE_OK is set; exiting 0 after a successful "
+                "BCB fetch."
+            )
+            return 0
         return 1
     except httpx.HTTPStatusError as exc:
         logger.error(

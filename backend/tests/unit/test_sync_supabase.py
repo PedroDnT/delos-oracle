@@ -177,8 +177,11 @@ class TestSync:
         with patch.object(sync_supabase, "BCBClient", return_value=bcb):
             assert await sync_supabase.sync() == 1
 
-    async def test_connect_error_fails(self, monkeypatch, cdi_rate_data):
+    async def test_connect_error_fails_without_unreachable_ok(
+        self, monkeypatch, cdi_rate_data
+    ):
         monkeypatch.delenv("DRY_RUN", raising=False)
+        monkeypatch.delenv("SUPABASE_UNREACHABLE_OK", raising=False)
         monkeypatch.setenv("SUPABASE_URL", "https://gone.supabase.co")
         monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-key")
 
@@ -197,6 +200,29 @@ class TestSync:
             AsyncMock(side_effect=httpx.ConnectError("Name or service not known")),
         ):
             assert await sync_supabase.sync() == 1
+
+    async def test_nxdomain_is_soft_when_unreachable_ok(
+        self, monkeypatch, cdi_rate_data
+    ):
+        monkeypatch.delenv("DRY_RUN", raising=False)
+        monkeypatch.setenv("SUPABASE_URL", "https://gone.supabase.co")
+        monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-key")
+        monkeypatch.setenv("SUPABASE_UNREACHABLE_OK", "1")
+
+        bcb = MagicMock()
+        bcb.__aenter__ = AsyncMock(return_value=bcb)
+        bcb.__aexit__ = AsyncMock(return_value=False)
+        bcb.fetch_all_latest_parallel = AsyncMock(
+            return_value={RateType.CDI: cdi_rate_data}
+        )
+        upsert = AsyncMock()
+
+        with patch.object(sync_supabase, "BCBClient", return_value=bcb), patch.object(
+            sync_supabase, "supabase_host_resolves", return_value=False
+        ), patch.object(sync_supabase, "upsert_rates", upsert):
+            assert await sync_supabase.sync() == 0
+
+        upsert.assert_not_awaited()
 
     async def test_strips_secret_newlines_before_upsert(
         self, monkeypatch, cdi_rate_data
