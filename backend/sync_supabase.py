@@ -125,9 +125,10 @@ def resolve_credentials() -> tuple[str, str, str]:
         if origin and origin not in {c[0] for c in candidates}:
             candidates.append((origin, label))
             stripped = raw.strip()
+            is_quoted = stripped[:1] in {'"', "'"}
             logger.info(
                 f"{label}: host={supabase_hostname(origin)!r} "
-                f"newline={raw != stripped} quoted={stripped[:1] in ('\"', chr(39))}"
+                f"newline={raw != stripped} quoted={is_quoted}"
             )
 
     if not candidates:
